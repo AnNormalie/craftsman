@@ -14,8 +14,9 @@ public abstract class DbProvider : SmartEnum<DbProvider>
 
     public abstract string PackageInclusionString(string version);
     public abstract string OTelSource();
-    public abstract string IntegrationTestDbSetupMethod(string projectBaseName);
-    public abstract string IntegrationTestConnectionStringSetup();
+    public abstract string TestingDbSetupMethod(string projectBaseName, bool isIntegrationTesting);
+    public abstract string IntegrationTestConnectionStringSetup(string configKeyName);
+    public abstract string DbRegistrationStatement();
     public abstract int Port();
     public abstract string DbConnectionStringCompose(string dbHostName, string dbName, string dbUser, string dbPassword);
     public abstract string DbConnectionString(string dbHostName, int? dbPort, string dbName, string dbUser, string dbPassword);
@@ -27,10 +28,12 @@ public abstract class DbProvider : SmartEnum<DbProvider>
             => @$"<PackageReference Include=""Npgsql.EntityFrameworkCore.PostgreSQL"" Version=""{version}"" />";
         public override string OTelSource()
             => @$"Npgsql";
+        public override string DbRegistrationStatement() => @$"UseNpgsql";
 
-        public override string IntegrationTestDbSetupMethod(string projectBaseName)
+        public override string TestingDbSetupMethod(string projectBaseName, bool isIntegrationTesting)
         {
-            return $@"private static TestcontainerDatabase dbSetup()
+            var testName = isIntegrationTesting ? "IntegrationTesting" : "FunctionalTesting";
+            return $@"private static TestcontainerDatabase DbSetup()
     {{
         return new TestcontainersBuilder<PostgreSqlTestcontainer>()
             .WithDatabase(new PostgreSqlTestcontainerConfiguration
@@ -39,17 +42,16 @@ public abstract class DbProvider : SmartEnum<DbProvider>
                 Username = ""postgres"",
                 Password = ""postgres""
             }})
-            .WithName($""IntegrationTesting_{projectBaseName}_{{Guid.NewGuid()}}"")
+            .WithName($""{testName}_{projectBaseName}_{{Guid.NewGuid()}}"")
             .WithImage(""postgres:latest"")
             .Build();
     }}";
         }
 
-        public override string IntegrationTestConnectionStringSetup() 
-            => $@"Environment.SetEnvironmentVariable(""DB_CONNECTION_STRING"", _dbContainer.ConnectionString);";
+        public override string IntegrationTestConnectionStringSetup(string configKeyName) 
+            => $@"builder.Configuration.GetSection(ConnectionStringOptions.SectionName)[ConnectionStringOptions.{configKeyName}] = _dbContainer.ConnectionString;";
 
-        public override int Port()
-            => 5432;
+        public override int Port() => 5432;
         public override string DbConnectionStringCompose(string dbHostName, string dbName, string dbUser,
             string dbPassword)
             => $"Host={dbHostName};Port={5432};Database={dbName};Username={dbUser};Password={dbPassword}";
@@ -60,14 +62,18 @@ public abstract class DbProvider : SmartEnum<DbProvider>
     private class SqlServerType : DbProvider
     {
         public SqlServerType() : base(nameof(SqlServer), 2) { }
-        public override string PackageInclusionString(string version)
-            => @$"<PackageReference Include=""Microsoft.EntityFrameworkCore.SqlServer"" Version=""{version}"" />";
+        public override string PackageInclusionString(string version) 
+            => @$"<PackageReference Include=""Microsoft.EntityFrameworkCore.SqlServer"" Version=""{version}"" />
+    <PackageReference Include = ""Microsoft.EntityFrameworkCore.Tools"" Version = ""{version}"" /> ";
+        
         public override string OTelSource()
-            => @$"Microsoft.EntityFrameworkCore.SqlServer";
+            => @$"Microsoft.EntityFrameworkCore.SqlServer";        
+        public override string DbRegistrationStatement() => @$"UseSqlServer";
 
-        public override string IntegrationTestDbSetupMethod(string projectBaseName)
+        public override string TestingDbSetupMethod(string projectBaseName, bool isIntegrationTesting)
         {
-            return $@"private static TestcontainerDatabase dbSetup()
+            var testName = isIntegrationTesting ? "IntegrationTesting" : "FunctionalTesting";
+            return $@"private static TestcontainerDatabase DbSetup()
     {{
         var isMacOs = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         var cpuArch = RuntimeInformation.ProcessArchitecture;
@@ -78,7 +84,7 @@ public abstract class DbProvider : SmartEnum<DbProvider>
             {{
                 Password = ""#testingDockerPassword#"",
             }})
-            .WithName($""IntegrationTesting_RecipeManagement_{Guid.NewGuid()}"");
+            .WithName($""{testName}_{projectBaseName}_{Guid.NewGuid()}"");
             
         if(isRunningOnMacOsArm64)
             baseDb.WithImage(""mcr.microsoft.com/azure-sql-edge:latest"");
@@ -87,11 +93,9 @@ public abstract class DbProvider : SmartEnum<DbProvider>
     }}";
         }
 
-        public override string IntegrationTestConnectionStringSetup() 
-            => $@"Environment.SetEnvironmentVariable(""DB_CONNECTION_STRING"", $""{{_dbContainer.ConnectionString}}TrustServerCertificate=true;"");";
-        
-        public override int Port()
-            => 1433;
+        public override string IntegrationTestConnectionStringSetup(string configKeyName) 
+            => $@"builder.Configuration.GetSection(ConnectionStringOptions.SectionName)[ConnectionStringOptions.{configKeyName}] = $""{{_dbContainer.ConnectionString}}TrustServerCertificate=true;"");";
+        public override int Port() => 1433;
         public override string DbConnectionStringCompose(string dbHostName, string dbName, string dbUser, string dbPassword)
             => $"Data Source={dbHostName},{1433};Integrated Security=False;Database={dbName};User ID={dbUser};Password={dbPassword}";
         public override string DbConnectionString(string dbHostName, int? dbPort, string dbName, string dbUser, string dbPassword)
@@ -106,9 +110,11 @@ public abstract class DbProvider : SmartEnum<DbProvider>
             => throw new Exception(Response);
         public override string OTelSource()
             => throw new Exception(Response);
-        public override string IntegrationTestDbSetupMethod(string projectBaseName)
+        public override string DbRegistrationStatement()
             => throw new Exception(Response);
-        public override string IntegrationTestConnectionStringSetup()
+        public override string TestingDbSetupMethod(string projectBaseName, bool isIntegrationTesting)
+            => throw new Exception(Response);
+        public override string IntegrationTestConnectionStringSetup(string configKeyName)
             => throw new Exception(Response);
         public override int Port()
             => throw new Exception(Response);

@@ -6,13 +6,13 @@ using Services;
 
 public static class EntityRepositoryBuilder
 {
-    public class EntityRepositoryBuilderCommand : IRequest<bool>
+    public class Command : IRequest<bool>
     {
         public readonly string DbContextName;
         public readonly string EntityName;
         public readonly string EntityPlural;
 
-        public EntityRepositoryBuilderCommand(string dbContextName, string entityName, string entityPlural)
+        public Command(string dbContextName, string entityName, string entityPlural)
         {
             DbContextName = dbContextName;
             EntityPlural = entityPlural;
@@ -20,7 +20,7 @@ public static class EntityRepositoryBuilder
         }
     }
 
-    public class Handler : IRequestHandler<EntityRepositoryBuilderCommand, bool>
+    public class Handler : IRequestHandler<Command, bool>
     {
         private readonly ICraftsmanUtilities _utilities;
         private readonly IScaffoldingDirectoryStore _scaffoldingDirectoryStore;
@@ -32,7 +32,7 @@ public static class EntityRepositoryBuilder
             _scaffoldingDirectoryStore = scaffoldingDirectoryStore;
         }
 
-        public Task<bool> Handle(EntityRepositoryBuilderCommand request, CancellationToken cancellationToken)
+        public Task<bool> Handle(Command request, CancellationToken cancellationToken)
         {
             var classPath = ClassPathHelper.EntityServicesClassPath(_scaffoldingDirectoryStore.SrcDirectory, 
                 $"{FileNames.EntityRepository(request.EntityName)}.cs", 
@@ -71,7 +71,7 @@ public interface {repoInterface} : {genericRepositoryInterface}<{entityName}>
 {{
 }}
 
-public class {repoName} : {genericRepoName}<{entityName}>, {repoInterface}
+public sealed class {repoName} : {genericRepoName}<{entityName}>, {repoInterface}
 {{
     private readonly {dbContextName} _dbContext;
 

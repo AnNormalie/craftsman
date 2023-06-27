@@ -22,14 +22,16 @@ public class MassTransitExtensionsBuilder
     public static string GetMassTransitServiceExtensionText(string classNamespace, string solutionDirectory, string srcDirectory, string projectBaseName)
     {
         var utilsClassPath = ClassPathHelper.WebApiResourcesClassPath(srcDirectory, "", projectBaseName);
-
+        var envServiceClassPath = ClassPathHelper.WebApiServicesClassPath(srcDirectory, "", projectBaseName);
         var messagesClassPath = ClassPathHelper.MessagesClassPath(solutionDirectory, "");
 
         return @$"namespace {classNamespace};
 
 using {utilsClassPath.ClassNamespace};
-using MassTransit;
+using {envServiceClassPath.ClassNamespace};
 using {messagesClassPath.ClassNamespace};
+using Configurations;
+using MassTransit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,8 +40,10 @@ using System.Reflection;
 
 public static class MassTransitServiceExtension
 {{
-    public static void AddMassTransitServices(this IServiceCollection services, IWebHostEnvironment env)
+    public static void AddMassTransitServices(this IServiceCollection services, IWebHostEnvironment env, IConfiguration configuration)
     {{
+        var rmqOptions = configuration.GetRabbitMqOptions();
+
         if (!env.IsEnvironment(Consts.Testing.IntegrationTestingEnvName) 
             && !env.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
         {{
@@ -48,13 +52,13 @@ public static class MassTransitServiceExtension
                 mt.AddConsumers(Assembly.GetExecutingAssembly());
                 mt.UsingRabbitMq((context, cfg) =>
                 {{
-                    cfg.Host(Environment.GetEnvironmentVariable(""RMQ_HOST""), 
-                        ushort.Parse(Environment.GetEnvironmentVariable(""RMQ_PORT"")), 
-                        Environment.GetEnvironmentVariable(""RMQ_VIRTUAL_HOST""), 
+                    cfg.Host(rmqOptions.Host, 
+                        ushort.Parse(rmqOptions.Port), 
+                        rmqOptions.VirtualHost, 
                         h =>
                         {{
-                            h.Username(Environment.GetEnvironmentVariable(""RMQ_USERNAME""));
-                            h.Password(Environment.GetEnvironmentVariable(""AUTH_PASSWORD""));
+                            h.Username(rmqOptions.Username);
+                            h.Password(rmqOptions.Password);
                         }});
 
                     // Producers -- Do Not Delete This Comment

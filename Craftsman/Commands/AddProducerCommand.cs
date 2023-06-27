@@ -46,7 +46,7 @@ public class AddProducerCommand : Command<AddProducerCommand.Settings>
         var potentialBoundaryDirectory = _utilities.GetRootDir();
 
         var solutionDirectory = _fileSystem.Directory.GetParent(potentialBoundaryDirectory)?.FullName;
-        _utilities.IsSolutionDirectoryGuard(solutionDirectory);
+        _utilities.IsSolutionDirectoryGuard(solutionDirectory, true);
         _scaffoldingDirectoryStore.SetSolutionDirectory(solutionDirectory);
 
         var projectName = new DirectoryInfo(potentialBoundaryDirectory).Name;
@@ -79,8 +79,6 @@ public class AddProducerCommand : Command<AddProducerCommand.Settings>
             new ProducerBuilder(_utilities).CreateProducerFeature(solutionDirectory, srcDirectory, producer, projectBaseName);
             new ProducerRegistrationBuilder(_utilities).CreateProducerRegistration(solutionDirectory, srcDirectory, producer, projectBaseName);
             new MassTransitModifier(_fileSystem).AddProducerRegistration(srcDirectory, producer.EndpointRegistrationMethodName, projectBaseName);
-
-            new ProducerTestBuilder(_utilities).CreateTests(solutionDirectory, testDirectory, srcDirectory, producer, projectBaseName);
         });
     }
 }

@@ -64,9 +64,9 @@ public class EntityProperty
                || IsMany;
     }
 
-    public bool IsPrimativeForeignKey => IsForeignKey && !IsMany && IsPrimativeType;
+    public bool IsPrimativeForeignKey => IsForeignKey && !IsMany && IsPrimitiveType;
 
-    public bool IsPrimativeType
+    public bool IsPrimitiveType
     {
         get
         {
@@ -104,6 +104,7 @@ public class EntityProperty
                || Type.StartsWith("Hashset<")
                || Type.StartsWith("Dictionary<")
                || Type.StartsWith("IDictionary<")
+               || Type.EndsWith("[]")
                || Type.StartsWith("List<");
     }
 

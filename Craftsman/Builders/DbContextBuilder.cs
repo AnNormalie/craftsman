@@ -41,12 +41,6 @@ public class DbContextBuilder
 
     public static string GetContextFileText(string classNamespace, List<Entity> entities, string dbContextName, string srcDirectory, bool useSoftDelete, string projectBaseName)
     {
-        var entitiesUsings = "";
-        foreach (var entity in entities)
-        {
-            var classPath = ClassPathHelper.EntityClassPath(srcDirectory, "", entity.Plural, projectBaseName);
-            entitiesUsings += $"{Environment.NewLine}using {classPath.ClassNamespace};";
-        }
         var servicesClassPath = ClassPathHelper.WebApiServicesClassPath(srcDirectory, "", projectBaseName);
         var baseEntityClassPath = ClassPathHelper.EntityClassPath(srcDirectory, $"", "", projectBaseName);
         var entityConfigClassPath = ClassPathHelper.DatabaseConfigClassPath(srcDirectory, $"", projectBaseName);
@@ -76,7 +70,8 @@ public class DbContextBuilder
 
 using {baseEntityClassPath.ClassNamespace};
 using {entityConfigClassPath.ClassNamespace};
-using {servicesClassPath.ClassNamespace};{entitiesUsings}
+using {servicesClassPath.ClassNamespace};
+using Configurations;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -85,21 +80,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 
-public class {dbContextName} : DbContext
+public sealed class {dbContextName} : DbContext
 {{
     private readonly ICurrentUserService _currentUserService;
     private readonly IMediator _mediator;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public {dbContextName}(
-        DbContextOptions<{dbContextName}> options, ICurrentUserService currentUserService, IMediator mediator) : base(options)
+        DbContextOptions<{dbContextName}> options, ICurrentUserService currentUserService, IMediator mediator, IDateTimeProvider dateTimeProvider) : base(options)
     {{
         _currentUserService = currentUserService;
         _mediator = mediator;
+        _dateTimeProvider = dateTimeProvider;
     }}
 
     #region DbSet Region - Do Not Delete
-
-{GetDbSetText(entities)}
     #endregion DbSet Region - Do Not Delete
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -107,7 +102,6 @@ public class {dbContextName} : DbContext
         base.OnModelCreating(modelBuilder);{modelBuilderFilter}
 
         #region Entity Database Config Region - Only delete if you don't want to automatically add configurations
-        {GetDbEntityConfigs(entities)}
         #endregion Entity Database Config Region - Only delete if you don't want to automatically add configurations
     }}
 
@@ -145,7 +139,7 @@ public class {dbContextName} : DbContext
         
     private void UpdateAuditFields()
     {{
-        var now = DateTime.UtcNow;
+        var now = _dateTimeProvider.DateTimeUtcNow;
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {{
             switch (entry.State)
@@ -190,29 +184,6 @@ public class {dbContextName} : DbContext
 }}";
     }
 
-    public static string GetDbSetText(List<Entity> entities)
-    {
-        var dbSetText = "";
-
-        foreach (var entity in entities)
-        {
-            var newLine = entity == entities.LastOrDefault() ? "" : $"{Environment.NewLine}";
-            dbSetText += @$"    public DbSet<{entity.Name}> {entity.Plural} {{ get; set; }}{newLine}";
-        }
-
-        return dbSetText;
-    }
-    
-    public static string GetDbEntityConfigs(List<Entity> entities)
-    {
-        var configList = entities
-            .Select(x => $"modelBuilder.ApplyConfiguration(new {FileNames.GetDatabaseEntityConfigName(x.Name)}());")
-            .ToList();
-        
-        var newLinedString = configList.Aggregate((current, next) => @$"{current}{Environment.NewLine}        {next}");
-        return newLinedString;
-    }
-
     private void RegisterContext(string srcDirectory, DbProvider dbProvider, string dbContextName, string dbName, string localDbConnection, NamingConventionEnum namingConventionEnum, string projectBaseName)
     {
         var classPath = ClassPathHelper.WebApiServiceExtensionsClassPath(srcDirectory, $"{FileNames.GetInfraRegistrationName()}.cs", projectBaseName);
@@ -222,8 +193,6 @@ public class {dbContextName} : DbContext
 
         if (!_fileSystem.File.Exists(classPath.FullClassPath))
             throw new FileNotFoundException($"The `{classPath.FullClassPath}` file could not be found.");
-
-        var usingDbStatement = GetDbUsingStatement(dbProvider);
         InstallDbProviderNugetPackages(dbProvider, srcDirectory);
 
         //TODO test for class and another for anything else
@@ -244,26 +213,20 @@ public class {dbContextName} : DbContext
                     if (line.Contains("// DbContext -- Do Not Delete")) // abstract this to a constants file?
                     {
                         newText += @$"
-        if (env.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
+        var connectionString = configuration.GetConnectionStringOptions().{projectBaseName};
+        if(string.IsNullOrWhiteSpace(connectionString))
         {{
-            services.AddDbContext<{dbContextName}>(options =>
-                options.UseInMemoryDatabase($""{dbName ?? dbContextName}""));
+            // this makes local migrations easier to manage. feel free to refactor if desired.
+            connectionString = env.IsDevelopment() 
+                ? ""{localDbConnection}""
+                : throw new Exception(""The database connection string is not set."");
         }}
-        else
-        {{
-            var connectionString = Environment.GetEnvironmentVariable(""DB_CONNECTION_STRING"");
-            if(string.IsNullOrEmpty(connectionString))
-            {{
-                // this makes local migrations easier to manage. feel free to refactor if desired.
-                connectionString = env.IsDevelopment() 
-                    ? ""{localDbConnection}""
-                    : throw new Exception(""DB_CONNECTION_STRING environment variable is not set."");
-            }}
 
-            services.AddDbContext<{dbContextName}>(options =>
-                options.{usingDbStatement}(connectionString,
-                    builder => builder.MigrationsAssembly(typeof({dbContextName}).Assembly.FullName)){namingConvention});
-        }}";
+        services.AddDbContext<{dbContextName}>(options =>
+            options.{dbProvider.DbRegistrationStatement()}(connectionString,
+                builder => builder.MigrationsAssembly(typeof({dbContextName}).Assembly.FullName)){namingConvention});
+
+        services.AddHostedService<MigrationHostedService<{dbContextName}>>();";
                     }
 
                     output.WriteLine(newText);
@@ -301,15 +264,5 @@ public class {dbContextName} : DbContext
 
         process.Start();
         process.WaitForExit();
-    }
-
-    private static object GetDbUsingStatement(DbProvider provider)
-    {
-        if (DbProvider.Postgres == provider)
-            return "UseNpgsql";
-        //else if (Enum.GetName(typeof(DbProvider), DbProvider.MySql) == provider)
-        //    return "UseMySql";
-
-        return "UseSqlServer";
     }
 }

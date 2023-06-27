@@ -26,7 +26,7 @@ public class PatchCommandTestBuilder
     {
         var featureName = FileNames.PatchEntityFeatureClassName(entity.Name);
         var testFixtureName = FileNames.GetIntegrationTestFixtureName();
-        var commandName = FileNames.CommandPatchName(entity.Name);
+        var commandName = FileNames.CommandPatchName();
 
         var fakerClassPath = ClassPathHelper.TestFakesClassPath(testDirectory, "", entity.Name, projectBaseName);
         var exceptionClassPath = ClassPathHelper.ExceptionsClassPath(testDirectory, "");
@@ -56,12 +56,11 @@ using {exceptionClassPath.ClassNamespace};
 using {featuresClassPath.ClassNamespace};
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using NUnit.Framework;
+using Xunit;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.JsonPatch;
-using static {testFixtureName};{foreignEntityUsings}
+using Microsoft.AspNetCore.JsonPatch;{foreignEntityUsings}
 
-public class {commandName}Tests : TestBase
+public class {classPath.ClassNameWithoutExt} : TestBase
 {{
     {GetAddCommandTest(commandName, entity, featureName, lookupVal, myProp)}
     {BadKey(commandName, entity, featureName)}{NullPatchDoc(commandName, entity, featureName)}
@@ -78,15 +77,16 @@ public class {commandName}Tests : TestBase
         var lowercaseEntityPk = pkName.LowercaseFirstLetter();
         var fakeCreationDto = FileNames.FakerName(FileNames.GetDtoName(entity.Name, Dto.Creation));
 
-        var fakeParent = IntegrationTestServices.FakeParentTestHelpers(entity, out var fakeParentIdRuleFor);
+        var fakeParent = IntegrationTestServices.FakeParentTestHelpersForBuilders(entity, out var fakeParentIdRuleFor);
 
-        return $@"[Test]
+        return $@"[Fact]
     public async Task can_patch_existing_{entity.Name.ToLower()}_in_db()
     {{
         // Arrange
+        var testingServiceScope = new {FileNames.TestingServiceScope()}();
         {fakeParent}var {fakeEntityVariableName} = {fakeEntity}.Generate(new {fakeCreationDto}(){fakeParentIdRuleFor}.Generate());
-        await InsertAsync({fakeEntityVariableName});
-        var {lowercaseEntityName} = await ExecuteDbContextAsync(db => db.{entity.Plural}
+        await testingServiceScope.InsertAsync({fakeEntityVariableName});
+        var {lowercaseEntityName} = await testingServiceScope.ExecuteDbContextAsync(db => db.{entity.Plural}
             .FirstOrDefaultAsync({entity.Lambda} => {entity.Lambda}.Id == {fakeEntityVariableName}.Id));
         var {lowercaseEntityPk} = {lowercaseEntityName}.{pkName};
 
@@ -96,8 +96,8 @@ public class {commandName}Tests : TestBase
 
         // Act
         var command = new {featureName}.{commandName}({lowercaseEntityPk}, patchDoc);
-        await SendAsync(command);
-        var updated{entity.Name} = await ExecuteDbContextAsync(db => db.{entity.Plural}.FirstOrDefaultAsync({entity.Lambda} => {entity.Lambda}.{pkName} == {lowercaseEntityPk}));
+        await testingServiceScope.SendAsync(command);
+        var updated{entity.Name} = await testingServiceScope.ExecuteDbContextAsync(db => db.{entity.Plural}.FirstOrDefaultAsync({entity.Lambda} => {entity.Lambda}.{pkName} == {lowercaseEntityPk}));
 
         // Assert
         updated{entity.Name}?.{prop.Name}.Should().Be(newValue);
@@ -110,10 +110,11 @@ public class {commandName}Tests : TestBase
 
         return randomId == "" ? "" : $@"
 
-    [Test]
+    [Fact]
     public async Task passing_null_patchdoc_throws_validationexception()
     {{
         // Arrange
+        var testingServiceScope = new {FileNames.TestingServiceScope()}();
         var randomId = {randomId};
 
         // Act
@@ -131,10 +132,11 @@ public class {commandName}Tests : TestBase
         var updateDto = FileNames.GetDtoName(entity.Name, Dto.Update);
 
         return badId == "" ? "" : $@"
-    [Test]
+    [Fact]
     public async Task patch_{entity.Name.ToLower()}_throws_notfound_exception_when_record_does_not_exist()
     {{
         // Arrange
+        var testingServiceScope = new {FileNames.TestingServiceScope()}();
         var badId = {badId};
         var patchDoc = new JsonPatchDocument<{updateDto}>();
 

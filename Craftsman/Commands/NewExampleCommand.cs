@@ -225,8 +225,6 @@ BoundedContexts:
       IsProtected: true
     - Type: DeleteRecord
       IsProtected: true
-    - Type: PatchRecord
-      IsProtected: true
     Properties:
     - Name: Title
       Type: string
@@ -245,6 +243,14 @@ BoundedContexts:
       CanSort: true
     - Name: Rating
       Type: int?
+      CanFilter: true
+      CanSort: true
+    - Name: DateOfOrigin
+      Type: DateOnly?
+      CanFilter: true
+      CanSort: true
+    - Name: HaveMadeItMyself
+      Type: bool
       CanFilter: true
       CanSort: true
     - Name: Author
@@ -365,9 +371,14 @@ Bff:
       Type: string #optional if string
     - Name: Directions
     - Name: RecipeSourceLink
+    - Name: Visibility
     - Name: Description
     - Name: Rating
       Type: number?
+    - Name: DateOfOrigin
+      Type: Date
+    - Name: HaveMadeItMyself
+      Type: boolean
   - Name: Ingredient
     Features:
     - Type: GetList
@@ -466,6 +477,10 @@ BoundedContexts:
       - Friends Only
       - Private
       CanFilter: true
+      CanSort: true
+    - Name: DateOfOrigin
+      Type: DateOnly?
+      CanFilter: true
       CanSort: true";
     }
 
@@ -522,6 +537,10 @@ BoundedContexts:
       - Private
       CanFilter: true
       CanSort: true
+    - Name: DateOfOrigin
+      Type: DateOnly?
+      CanFilter: true
+      CanSort: true
   Environment:
     AuthSettings:
       Authority: http://localhost:3255/auth/realms/DevRealm
@@ -576,6 +595,10 @@ BoundedContexts:
       - Public
       - Friends Only
       - Private
+      CanFilter: true
+      CanSort: true
+    - Name: DateOfOrigin
+      Type: DateOnly?
       CanFilter: true
       CanSort: true
   Environment:
@@ -668,6 +691,10 @@ BoundedContexts:
       - Private
       CanFilter: true
       CanSort: true
+    - Name: DateOfOrigin
+      Type: DateOnly?
+      CanFilter: true
+      CanSort: true
   Environment:
     AuthSettings:
       Authority: http://localhost:3255/auth/realms/DevRealm
@@ -701,6 +728,7 @@ Bff:
       Type: string #optional if string
     - Name: Directions
     - Name: RecipeSourceLink
+    - Name: Visibility
     - Name: Description
     - Name: ImageLink
     - Name: Visibility

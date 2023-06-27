@@ -28,13 +28,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using HeimGuard;
 using {servicesClassPath.ClassNamespace};";
         var authServices = $@"
+        var authOptions = configuration.GetAuthOptions();
         if (!env.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
         {{
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {{
-                    options.Authority = Environment.GetEnvironmentVariable(""AUTH_AUTHORITY"");
-                    options.Audience = Environment.GetEnvironmentVariable(""AUTH_AUDIENCE"");
+                    options.Authority = authOptions.Authority;
+                    options.Audience = authOptions.Audience;
                     options.RequireHttpsMetadata = !env.IsDevelopment();
                 }});
         }}
@@ -73,8 +74,8 @@ using {servicesClassPath.ClassNamespace};";
         }
 
         // delete the old file and set the name of the new one to the original name
-        File.Delete(classPath.FullClassPath);
-        File.Move(tempPath, classPath.FullClassPath);
+        _fileSystem.File.Delete(classPath.FullClassPath);
+        _fileSystem.File.Move(tempPath, classPath.FullClassPath);
     }
 }
 

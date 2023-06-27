@@ -7,209 +7,119 @@ using Helpers;
 public static class FileNames
 {
     public static string BoundaryServiceInterface(string projectBaseName)
-    {
-        return $"I{projectBaseName}Service";
-    }
+        => $"I{projectBaseName}ScopedService";
+    public static string EntityRepository(string entityName) 
+        => $"{entityName.UppercaseFirstLetter()}Repository";    
+    public static string EntityRepositoryInterface(string entityName) 
+        => $"I{EntityRepository(entityName)}";    
+    public static string GenericRepository() 
+        => $"GenericRepository";    
+    public static string GenericRepositoryInterface() 
+        => $"I{GenericRepository()}";    
+    public static string WebAppServiceConfiguration() 
+        => $"WebAppServiceConfiguration";    
+    public static string GetMassTransitRegistrationName() 
+        => "MassTransitServiceExtension";
+    public static string MessageClassName(string messageName) 
+        => $"{messageName}";
+    public static string ConnectionStringOptionKey(string projectBaseName) => $"{projectBaseName}Key";
+    public static string TestingServiceScope() => "TestingServiceScope";
+    public static string AuthOptions() => "AuthOptions";
+    public static string RabbitMqOptions() => "RabbitMqOptions";
+    public static string ConnectionStringOptions() => "ConnectionStringOptions";
+    public static string RootConfigurationExtensions() => "RootConfigurationExtensions";
+    public static string FakeBuilderName(string entityName) => $"Fake{entityName}Builder";    
+    public static string MessageInterfaceName(string messageName) => $"I{messageName}";
+    public static string EntityCreatedDomainMessage(string entityName) => $"{entityName}Created";    
+    public static string EntityUpdatedDomainMessage(string entityName) => $"{entityName}Updated";    
+    public static string UserRolesUpdateDomainMessage() => "UserRolesUpdated";
+    public static string GetApiRouteClass(string entityPlural) => entityPlural;    
+    public static string GetWebHostFactoryName() => "TestingWebApplicationFactory";    
+    public static string GetFunctionalFixtureName() => "FunctionalTestFixture";    
+    public static string GetControllerName(string entityName) => $"{entityName}Controller";    
+    public static string GetDatabaseEntityConfigName(string entityName) => $"{entityName}Configuration";    
+    public static string GetMigrationHostedServiceFileName() => $"MigrationHostedService";    
+    public static string GetEnvironmentServiceFileName() => $"EnvironmentService";    
+    public static string GetEnvironmentServiceInterfaceFileName() => $"I{GetEnvironmentServiceFileName()}";
+    public static string GetSeederName(Entity entity) => $"{entity.Name}Seeder";
+    public static string GetInfraRegistrationName() => "InfrastructureServiceExtension";
+    public static string GetSwaggerServiceExtensionName() => "SwaggerServiceExtension";
+    public static string GetAppSettingsName(bool isDev = false) => isDev ? $"appsettings.Development.json" : $"appsettings.json";
+    public static string BffApiKeysFilename(string entityName) => $"{entityName.LowercaseFirstLetter()}.keys";
+    public static string BffEntityListRouteComponentName(string entityName) => $"{entityName.UppercaseFirstLetter()}List";
+    public static string BffApiKeysExport(string entityName) => $"{entityName.UppercaseFirstLetter()}Keys";
+    public static string NextJsApiKeysFilename(string entityName) => $"{entityName.LowercaseFirstLetter()}.keys";
+    public static string NextJsEntityListRouteComponentName(string entityName) => $"{entityName.UppercaseFirstLetter()}List";
     
-    public static string EntityRepository(string entityName)
+    public static string NextJsEntityFeatureListTableName(string entityName) => $"{entityName}ListTable";
+
+    public static string NextJsEntityFeatureFormName(string entityName) => $"{entityName}Form";
+    public static string NextJsEntityValidationName(string entityName) => $"{entityName.LowercaseFirstLetter()}ValidationSchema";
+    public static string NextJsApiKeysExport(string entityName) => $"{entityName.UppercaseFirstLetter()}Keys";
+    public static string GetMappingName(string entityName) => $"{entityName}Mappings";
+    public static string GetIntegrationTestFixtureName() => $"TestFixture";
+
+    public static string CreateEntityUnitTestName(string entityName) => $"Create{entityName}Tests";
+
+    public static string GetEntityListUnitTestName(string entityName) => $"Get{entityName}ListTests";
+
+    public static string UpdateEntityUnitTestName(string entityName) => $"Update{entityName}Tests";
+
+    public static string GetEntityFeatureClassName(string entityName) => $"Get{entityName}";
+
+    public static string GetEntityListFeatureClassName(string entityName) => $"Get{entityName}List";
+
+    public static string AddEntityFeatureClassName(string entityName) => $"Add{entityName}";
+
+    public static string DeleteEntityFeatureClassName(string entityName) => $"Delete{entityName}";
+
+    public static string UpdateEntityFeatureClassName(string entityName) => $"Update{entityName}";
+    public static string PatchEntityFeatureClassName(string entityName) =>  $"Patch{entityName}";
+    public static string AddUserRoleFeatureClassName() => $"AddUserRole";
+    public static string RemoveUserRoleFeatureClassName() => $"RemoveUserRole";
+
+    public static string QueryListName()
     {
-        return $"{entityName.UppercaseFirstLetter()}Repository";
-    }
-    
-    public static string EntityRepositoryInterface(string entityName)
-    {
-        return $"I{EntityRepository(entityName)}";
-    }
-    
-    public static string GenericRepository()
-    {
-        return $"GenericRepository";
-    }
-    
-    public static string GenericRepositoryInterface()
-    {
-        return $"I{GenericRepository()}";
-    }
-    
-    public static string WebAppServiceConfiguration()
-    {
-        return $"WebAppServiceConfiguration";
-    }
-    
-    public static string GetMassTransitRegistrationName()
-    {
-        return "MassTransitServiceExtension";
+        return $"Query";
     }
 
-    public static string MessageClassName(string messageName)
+    public static string QueryRecordName()
     {
-        return $"{messageName}";
+        return $"Query";
     }
 
-    public static string MessageInterfaceName(string messageName)
+    public static string CommandAddName()
     {
-        return $"I{messageName}";
+        return $"Command";
     }
 
-    public static string EntityCreatedDomainMessage(string entityName)
+    public static string CommandDeleteName()
     {
-        return $"{entityName}Created";
+        return $"Command";
     }
 
-    public static string EntityUpdatedDomainMessage(string entityName)
+    public static string CommandUpdateName()
     {
-        return $"{entityName}Updated";
+        return $"Command";
     }
 
-    public static string GetApiRouteClass(string entityPlural)
+    public static string CommandPatchName()
     {
-        return entityPlural;
-    }
-
-    public static string GetWebHostFactoryName()
-    {
-        return "TestingWebApplicationFactory";
-    }
-
-    public static string GetControllerName(string entityName)
-    {
-        return $"{entityName}Controller";
-    }
-
-    public static string GetDatabaseEntityConfigName(string entityName)
-    {
-        return $"{entityName}Configuration";
-    }
-
-    public static string GetSeederName(Entity entity)
-    {
-        return $"{entity.Name}Seeder";
-    }
-
-    public static string GetInfraRegistrationName()
-    {
-        return "InfrastructureServiceExtension";
-    }
-
-    public static string GetSwaggerServiceExtensionName()
-    {
-        return "SwaggerServiceExtension";
-    }
-
-    public static string GetAppSettingsName(bool asJson = true)
-    {
-        return asJson ? $"appsettings.json" : $"appsettings";
-    }
-
-    public static string BffApiKeysFilename(string entityName)
-    {
-        return $"{entityName.LowercaseFirstLetter()}.keys";
-    }
-
-    public static string BffEntityListRouteComponentName(string entityName)
-    {
-        return $"{entityName.UppercaseFirstLetter()}List";
-    }
-
-    public static string BffApiKeysExport(string entityName)
-    {
-        return $"{entityName.UppercaseFirstLetter()}Keys";
-    }
-
-    public static string GetMappingName(string entityName)
-    {
-        return $"{entityName}Mappings";
-    }
-
-    public static string GetIntegrationTestFixtureName()
-    {
-        return $"TestFixture";
-    }
-
-    public static string CreateEntityUnitTestName(string entityName)
-    {
-        return $"Create{entityName}Tests";
-    }
-
-    public static string GetEntityListUnitTestName(string entityName)
-    {
-        return $"Get{entityName}ListTests";
-    }
-
-    public static string UpdateEntityUnitTestName(string entityName)
-    {
-        return $"Update{entityName}Tests";
-    }
-
-    public static string GetEntityFeatureClassName(string entityName)
-    {
-        return $"Get{entityName}";
-    }
-
-    public static string GetEntityListFeatureClassName(string entityName)
-    {
-        return $"Get{entityName}List";
-    }
-
-    public static string AddEntityFeatureClassName(string entityName)
-    {
-        return $"Add{entityName}";
-    }
-
-    public static string DeleteEntityFeatureClassName(string entityName)
-    {
-        return $"Delete{entityName}";
-    }
-
-    public static string UpdateEntityFeatureClassName(string entityName)
-    {
-        return $"Update{entityName}";
-    }
-
-    public static string PatchEntityFeatureClassName(string entityName)
-    {
-        return $"Patch{entityName}";
-    }
-
-    public static string QueryListName(string entityName)
-    {
-        return $"{entityName}ListQuery";
-    }
-
-    public static string QueryRecordName(string entityName)
-    {
-        return $"{entityName}Query";
-    }
-
-    public static string CommandAddName(string entityName)
-    {
-        return $"Add{entityName}Command";
-    }
-
-    public static string CommandDeleteName(string entityName)
-    {
-        return $"Delete{entityName}Command";
-    }
-
-    public static string CommandUpdateName(string entityName)
-    {
-        return $"Update{entityName}Command";
-    }
-
-    public static string CommandPatchName(string entityName)
-    {
-        return $"Patch{entityName}Command";
+        return $"Command";
     }
 
     public static string FakerName(string objectToFakeName)
+        => $"Fake{objectToFakeName}";
+
+    public static string UnitTestUtilsName()
     {
-        return $"Fake{objectToFakeName}";
-    }
+        return $"UnitTestUtils";
+    } 
+    
     public static string GetDtoName(string entityName, Dto dto)
     {
         return dto switch
         {
-            Dto.Manipulation => $"{entityName}ForManipulationDto",
             Dto.Creation => $"{entityName}ForCreationDto",
             Dto.Update => $"{entityName}ForUpdateDto",
             Dto.Read => $"{entityName}Dto",
@@ -234,23 +144,5 @@ public static class FileNames
             nameof(FeatureType.DeleteRecord) => $"delete{entityName.UppercaseFirstLetter()}",
             _ => throw new Exception($"The '{type.Name}' feature is not supported in bff api scaffolding.")
         };
-    }
-
-    public static string ValidatorNameGenerator(string entityName, Validator validator)
-    {
-        switch (validator)
-        {
-            case Validator.Manipulation:
-                return $"{entityName}ForManipulationDtoValidator";
-
-            case Validator.Creation:
-                return $"{entityName}ForCreationDtoValidator";
-
-            case Validator.Update:
-                return $"{entityName}ForUpdateDtoValidator";
-
-            default:
-                throw new Exception($"Name generator not configured for {Enum.GetName(typeof(Validator), validator)}");
-        }
     }
 }

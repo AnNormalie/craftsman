@@ -8,11 +8,17 @@ using Services;
 
 public static class CommonValueObjectBuilder
 {
-    public class CommonValueObjectBuilderCommand : IRequest<bool>
+    public class Command : IRequest<bool>
     {
+        public readonly bool HasAuth;
+
+        public Command(bool hasAuth)
+        {
+            HasAuth = hasAuth;
+        }
     }
 
-    public class Handler : IRequestHandler<CommonValueObjectBuilderCommand, bool>
+    public class Handler : IRequestHandler<Command, bool>
     {
         private readonly ICraftsmanUtilities _utilities;
         private readonly IScaffoldingDirectoryStore _scaffoldingDirectoryStore;
@@ -24,7 +30,7 @@ public static class CommonValueObjectBuilder
             _scaffoldingDirectoryStore = scaffoldingDirectoryStore;
         }
 
-        public Task<bool> Handle(CommonValueObjectBuilderCommand request, CancellationToken cancellationToken)
+        public Task<bool> Handle(Command request, CancellationToken cancellationToken)
         {
             var percentClassPath = ClassPathHelper.WebApiValueObjectsClassPath(_scaffoldingDirectoryStore.SrcDirectory, 
                 $"{ValueObjectEnum.Percent.Name}.cs",
@@ -46,6 +52,23 @@ public static class CommonValueObjectBuilder
                 _scaffoldingDirectoryStore.ProjectBaseName);
             var monetaryAmountFileText = GetMonetaryAmountFileText(monetaryAmountClassPath.ClassNamespace);
             _utilities.CreateFile(monetaryAmountClassPath, monetaryAmountFileText);
+            
+            var emailClassPath = ClassPathHelper.WebApiValueObjectsClassPath(_scaffoldingDirectoryStore.SrcDirectory, 
+                $"{ValueObjectEnum.Email.Name}.cs",
+                ValueObjectEnum.Email.Plural(),
+                _scaffoldingDirectoryStore.ProjectBaseName);
+            var emailFileText = GetEmailFileText(emailClassPath.ClassNamespace);
+            _utilities.CreateFile(emailClassPath, emailFileText);
+
+            if (request.HasAuth)
+            {
+                var roleClassPath = ClassPathHelper.WebApiValueObjectsClassPath(_scaffoldingDirectoryStore.SrcDirectory, 
+                    $"{ValueObjectEnum.Role.Name}.cs",
+                    ValueObjectEnum.Role.Plural(),
+                    _scaffoldingDirectoryStore.ProjectBaseName);
+                var roleFileText = GetRoleFileText(roleClassPath.ClassNamespace);
+                _utilities.CreateFile(roleClassPath, roleFileText);
+            }
 
             return Task.FromResult(true);
         }
@@ -195,9 +218,15 @@ public class {ValueObjectEnum.MonetaryAmount.Name} : ValueObject
 
     public MonetaryAmount Add(MonetaryAmount other) => new MonetaryAmount(Amount + other.Amount);
 
+    public MonetaryAmount Add(decimal amount) => Add(new MonetaryAmount(amount));
+
     public MonetaryAmount Subtract(MonetaryAmount other) => new MonetaryAmount(Amount - other.Amount);
+
+    public MonetaryAmount Subtract(decimal amount) => Subtract(new MonetaryAmount(amount));
         
     public MonetaryAmount MultiplyByPercent(Percent percent) => new MonetaryAmount((Amount * percent.Value)/100M);
+
+    public MonetaryAmount MultiplyByPercent(decimal percent) => MultiplyByPercent(new Percent(percent));
 
     public static MonetaryAmount operator +(MonetaryAmount one, MonetaryAmount two) => one.Add(two);
         
@@ -212,10 +241,120 @@ public class {ValueObjectEnum.MonetaryAmount.Name} : ValueObject
     public static bool operator >=(MonetaryAmount one, MonetaryAmount two) => one.CompareTo(two)>=0;
         
     public static bool operator <=(MonetaryAmount one, MonetaryAmount two) => one.CompareTo(two)<=0;
+    
+    public static MonetaryAmount Of(decimal value) => new MonetaryAmount(value);
 
     public int CompareTo(MonetaryAmount other)
     {{
         return Amount.CompareTo(other.Amount);
+    }}
+}}";
+        }
+        
+        private string GetRoleFileText(string classNamespace)
+        {
+            var voClassPath = ClassPathHelper.SharedKernelDomainClassPath(_scaffoldingDirectoryStore.SolutionDirectory, "");
+            var exceptionsClassPath = ClassPathHelper.ExceptionsClassPath(_scaffoldingDirectoryStore.SolutionDirectory, "");
+            
+            return @$"namespace {classNamespace};
+
+using {exceptionsClassPath.ClassNamespace};
+using {voClassPath.ClassNamespace};
+using Ardalis.SmartEnum;
+
+public class Role : ValueObject
+{{
+    private RoleEnum _role;
+    public string Value
+    {{
+        get => _role.Name;
+        private set
+        {{
+            if (!RoleEnum.TryFromName(value, true, out var parsed))
+                throw new InvalidSmartEnumPropertyName(nameof(Value), value);
+
+            _role = parsed;
+        }}
+    }}
+    
+    public Role(string value)
+    {{
+        Value = value;
+    }}
+    public Role(RoleEnum value)
+    {{
+        Value = value.Name;
+    }}
+    
+    public static Role Of(string value) => new Role(value);
+    public static implicit operator string(Role value) => value.Value;
+    public static List<string> ListNames() => RoleEnum.List.Select(x => x.Name).ToList();
+
+    public static Role User() => new Role(RoleEnum.User.Name);
+    public static Role SuperAdmin() => new Role(RoleEnum.SuperAdmin.Name);
+
+    protected Role() {{ }} // EF Core
+}}
+
+public abstract class RoleEnum : SmartEnum<RoleEnum>
+{{
+    public static readonly RoleEnum User = new UserType();
+    public static readonly RoleEnum SuperAdmin = new SuperAdminType();
+
+    protected RoleEnum(string name, int value) : base(name, value)
+    {{
+    }}
+
+    private class UserType : RoleEnum
+    {{
+        public UserType() : base(""User"", 0)
+        {{
+        }}
+    }}
+
+    private class SuperAdminType : RoleEnum
+    {{
+        public SuperAdminType() : base(""Super Admin"", 1)
+        {{
+        }}
+    }}
+}}";
+        }
+        private string GetEmailFileText(string classNamespace)
+        {
+            var voClassPath = ClassPathHelper.SharedKernelDomainClassPath(_scaffoldingDirectoryStore.SolutionDirectory, "");
+
+            return @$"namespace {classNamespace};
+
+using {voClassPath.ClassNamespace};
+using FluentValidation;
+
+public sealed class Email : ValueObject
+{{
+    public string Value {{ get; set; }}
+    
+    public Email(string value)
+    {{
+        if (string.IsNullOrWhiteSpace(value))
+        {{
+            Value = null;
+            return;
+        }}
+        new EmailValidator().ValidateAndThrow(value);
+        Value = value;
+    }}
+    
+    public static Email Of(string value) => new Email(value);
+    public static implicit operator string(Email value) => value.Value;
+
+    private Email() {{ }} // EF Core
+    
+    private sealed class EmailValidator : AbstractValidator<string> 
+    {{
+        public EmailValidator()
+        {{
+            RuleFor(email => email).EmailAddress();
+        }}
     }}
 }}";
         }

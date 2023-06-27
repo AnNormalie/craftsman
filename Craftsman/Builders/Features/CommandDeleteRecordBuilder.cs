@@ -23,10 +23,11 @@ public class CommandDeleteRecordBuilder
     public static string GetCommandFileText(string classNamespace, Entity entity, string srcDirectory, string projectBaseName, bool isProtected, string permissionName)
     {
         var className = FileNames.DeleteEntityFeatureClassName(entity.Name);
-        var deleteCommandName = FileNames.CommandDeleteName(entity.Name);
+        var deleteCommandName = FileNames.CommandDeleteName();
 
         var primaryKeyPropType = Entity.PrimaryKeyProperty.Type;
         var primaryKeyPropName = Entity.PrimaryKeyProperty.Name;
+        var primaryKeyPropNameLowercase = primaryKeyPropName.LowercaseFirstLetter();
         var entityNameLowercase = entity.Name.LowercaseFirstLetter();
         var repoInterface = FileNames.EntityRepositoryInterface(entity.Name);
         var repoInterfaceProp = $"{entity.Name.LowercaseFirstLetter()}Repository";
@@ -54,17 +55,17 @@ using MediatR;
 
 public static class {className}
 {{
-    public class {deleteCommandName} : IRequest<bool>
+    public sealed class {deleteCommandName} : IRequest<bool>
     {{
         public readonly {primaryKeyPropType} {primaryKeyPropName};
 
-        public {deleteCommandName}({primaryKeyPropType} {entityNameLowercase})
+        public {deleteCommandName}({primaryKeyPropType} {primaryKeyPropNameLowercase})
         {{
-            {primaryKeyPropName} = {entityNameLowercase};
+            {primaryKeyPropName} = {primaryKeyPropNameLowercase};
         }}
     }}
 
-    public class Handler : IRequestHandler<{deleteCommandName}, bool>
+    public sealed class Handler : IRequestHandler<{deleteCommandName}, bool>
     {{
         private readonly {repoInterface} _{repoInterfaceProp};
         private readonly IUnitOfWork _unitOfWork;{heimGuardField}
@@ -78,10 +79,8 @@ public static class {className}
         public async Task<bool> Handle({deleteCommandName} request, CancellationToken cancellationToken)
         {{{permissionCheck}
             var recordToDelete = await _{repoInterfaceProp}.GetById(request.Id, cancellationToken: cancellationToken);
-
             _{repoInterfaceProp}.Remove(recordToDelete);
-            await _unitOfWork.CommitChanges(cancellationToken);
-            return true;
+            return await _unitOfWork.CommitChanges(cancellationToken) >= 1;
         }}
     }}
 }}";

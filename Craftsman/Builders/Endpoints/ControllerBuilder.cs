@@ -42,7 +42,6 @@ using {featureClassPath.ClassNamespace};
 using {dtoClassPath.ClassNamespace};
 using {wrapperClassPath.ClassNamespace};{permissionsUsing}
 using System.Text.Json;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -53,7 +52,7 @@ using MediatR;
 [ApiController]
 [Route(""{endpointBase}"")]
 [ApiVersion(""1.0"")]
-public class {entityPlural}Controller: ControllerBase
+public sealed class {entityPlural}Controller: ControllerBase
 {{
     private readonly IMediator _mediator;
 

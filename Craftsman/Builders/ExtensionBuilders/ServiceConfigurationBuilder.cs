@@ -31,6 +31,7 @@ public class ServiceConfigurationBuilder
 
 using {middlewareClassPath.ClassNamespace};
 using {servicesClassPath.ClassNamespace};
+using Configurations;
 using System.Text.Json.Serialization;
 using Serilog;
 using FluentValidation.AspNetCore;
@@ -41,23 +42,22 @@ using Microsoft.Extensions.DependencyInjection;
 using Resources;
 using Sieve.Services;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 public static class {FileNames.WebAppServiceConfiguration()}
 {{
     public static void ConfigureServices(this WebApplicationBuilder builder)
     {{
+        builder.Services.AddTransient<IDateTimeProvider, DateTimeProvider>();
         builder.Services.AddSingleton(Log.Logger);
         // TODO update CORS for your env
         builder.Services.AddCorsService(""{corsName}"", builder.Environment);
-        builder.Services.OpenTelemetryRegistration(""{projectBaseName}"");
-        builder.Services.AddInfrastructure(builder.Environment);
+        builder.OpenTelemetryRegistration(builder.Configuration, ""{projectBaseName}"");
+        builder.Services.AddInfrastructure(builder.Environment, builder.Configuration);
 
-        // using Newtonsoft.Json to support PATCH docs since System.Text.Json does not support them https://github.com/dotnet/aspnetcore/issues/24333
-        // if you are not using PatchDocs and would prefer to use System.Text.Json, you can remove The `AddNewtonSoftJson()` line
-        builder.Services.AddControllers(options => options.UseDateOnlyTimeOnlyStringConverters())
-            .AddJsonOptions(options => options.UseDateOnlyTimeOnlyStringConverters())
-            .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
-            .AddNewtonsoftJson();
+        builder.Services.AddControllers()
+            .AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
         builder.Services.AddApiVersioningExtension();
 
         builder.Services.AddHttpContextAccessor();
@@ -67,7 +67,8 @@ public static class {FileNames.WebAppServiceConfiguration()}
         // registers all services that inherit from your base service interface - {boundaryServiceName}
         builder.Services.AddBoundaryServices(Assembly.GetExecutingAssembly());
 
-        builder.Services.AddMvc(options => options.Filters.Add<ErrorHandlerFilterAttribute>());
+        builder.Services
+            .AddMvc(options => options.Filters.Add<ErrorHandlerFilterAttribute>());
 
         if(builder.Environment.EnvironmentName != Consts.Testing.FunctionalTestingEnvName)
         {{
@@ -78,7 +79,7 @@ public static class {FileNames.WebAppServiceConfiguration()}
         }}
 
         builder.Services.AddHealthChecks();
-        builder.Services.AddSwaggerExtension();
+        builder.Services.AddSwaggerExtension(builder.Configuration);
     }}
 
     /// <summary>

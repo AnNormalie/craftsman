@@ -13,41 +13,30 @@ public static class DtoFileTextGenerator
     {
         var sharedDtoClassPath = ClassPathHelper.SharedDtoClassPath(solutionDirectory, "");
 
-        return @$"namespace {classNamespace}
-{{
-    using {sharedDtoClassPath.ClassNamespace};
+        return @$"namespace {classNamespace};
 
-    public class {FileNames.GetDtoName(entity.Name, dto)} : BasePaginationParameters
-    {{
-        public string Filters {{ get; set; }}
-        public string SortOrder {{ get; set; }}
-    }}
-}}";
+using {sharedDtoClassPath.ClassNamespace};
+
+public sealed class {FileNames.GetDtoName(entity.Name, dto)} : BasePaginationParameters
+{{
+    public string Filters {{ get; set; }}
+    public string SortOrder {{ get; set; }}
+}}
+";
     }
 
     public static string GetDtoText(IClassPath dtoClassPath, Entity entity, Dto dto)
     {
-        var propString = dto is Dto.Read ? $@"        public Guid Id {{ get; set; }}{Environment.NewLine}" : "";
+        var propString = dto is Dto.Read ? $"    public Guid Id {{ get; set; }}{Environment.NewLine}" : "";
         propString += DtoPropBuilder(entity.Properties, dto);
-        if (dto is Dto.Update or Dto.Creation)
-            propString = "";
 
-        var abstractString = dto == Dto.Manipulation ? $"abstract " : "";
+        return @$"namespace {dtoClassPath.ClassNamespace};
 
-        var inheritanceString = "";
-        if (dto is Dto.Creation or Dto.Update)
-            inheritanceString = $": {FileNames.GetDtoName(entity.Name, Dto.Manipulation)}";
-
-        return @$"namespace {dtoClassPath.ClassNamespace}
+public sealed class {FileNames.GetDtoName(entity.Name, dto)}
 {{
-    using System.Collections.Generic;
-    using System;
-
-    public {abstractString}class {FileNames.GetDtoName(entity.Name, dto)} {inheritanceString}
-    {{
 {propString}
-    }}
-}}";
+}}
+";
     }
 
     public static string DtoPropBuilder(List<EntityProperty> props, Dto dto)
@@ -55,18 +44,15 @@ public static class DtoFileTextGenerator
         var propString = "";
         for (var eachProp = 0; eachProp < props.Count; eachProp++)
         {
-            if (!props[eachProp].CanManipulate && dto == Dto.Manipulation)
+            if (!props[eachProp].CanManipulate && (dto is Dto.Creation or Dto.Update))
                 continue;
             if (props[eachProp].IsForeignKey && props[eachProp].IsMany)
                 continue;
-            if (!props[eachProp].IsPrimativeType)
+            if (!props[eachProp].IsPrimitiveType)
                 continue;
-            var guidDefault = dto == Dto.Creation && props[eachProp].Type.IsGuidPropertyType()
-                ? " = Guid.NewGuid();"
-                : "";
 
             string newLine = eachProp == props.Count - 1 ? "" : Environment.NewLine;
-            propString += $@"        public {props[eachProp].Type} {props[eachProp].Name} {{ get; set; }}{guidDefault}{newLine}";
+            propString += $@"    public {props[eachProp].Type} {props[eachProp].Name} {{ get; set; }}{newLine}";
         }
 
         return propString;

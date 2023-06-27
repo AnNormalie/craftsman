@@ -19,18 +19,12 @@ public class ProgramBuilder
         _utilities.CreateFile(classPath, fileText);
     }
 
-    public void CreateAuthServerProgram(string solutionDirectory, string authServerProjectName)
-    {
-        var classPath = ClassPathHelper.WebApiProjectRootClassPath(solutionDirectory, $"Program.cs", authServerProjectName);
-        var fileText = GetAuthServerProgramText(classPath.ClassNamespace);
-        _utilities.CreateFile(classPath, fileText);
-    }
-
     public static string GetWebApiProgramText(string srcDirectory, bool useJwtAuth, string projectBaseName)
     {
         var hostExtClassPath = ClassPathHelper.WebApiHostExtensionsClassPath(srcDirectory, $"", projectBaseName);
         var apiAppExtensionsClassPath = ClassPathHelper.WebApiApplicationExtensionsClassPath(srcDirectory, "", projectBaseName);
         var configClassPath = ClassPathHelper.WebApiServiceExtensionsClassPath(srcDirectory, "", projectBaseName);
+        var dbClassPath = ClassPathHelper.DbContextClassPath(srcDirectory, $"{FileNames.GetMigrationHostedServiceFileName()}.cs", projectBaseName);
         
         var appAuth = "";
         var corsName = $"{projectBaseName}CorsPolicy";
@@ -46,12 +40,15 @@ app.UseAuthorization();";
 using {apiAppExtensionsClassPath.ClassNamespace};
 using {hostExtClassPath.ClassNamespace};
 using {configClassPath.ClassNamespace};
+using {dbClassPath.ClassNamespace};
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.AddLoggingConfiguration(builder.Environment);
 
 builder.ConfigureServices();
 var app = builder.Build();
+
+using var scope = app.Services.CreateScope();
 
 if (builder.Environment.IsDevelopment())
 {{
@@ -79,7 +76,7 @@ app.UseEndpoints(endpoints =>
     endpoints.MapControllers();
 }});
 
-app.UseSwaggerExtension();
+app.UseSwaggerExtension(builder.Configuration, builder.Environment);
 
 try
 {{
@@ -99,18 +96,5 @@ finally
 
 // Make the implicit Program class public so the functional test project can access it
 public partial class Program {{ }}";
-    }
-    
-    public static string GetAuthServerProgramText(string classNamespace)
-    {
-        return @$"namespace {classNamespace};
-
-using System.Threading.Tasks;
-using Pulumi;
-
-internal static class Program
-{{
-    private static Task<int> Main() => Deployment.RunAsync<RealmBuild>();
-}}";
     }
 }

@@ -43,7 +43,7 @@ public class AddConsumerCommand : Command<AddConsumerCommand.Settings>
         var potentialBoundaryDirectory = _utilities.GetRootDir();
 
         var solutionDirectory = _fileSystem.Directory.GetParent(potentialBoundaryDirectory)?.FullName;
-        _utilities.IsSolutionDirectoryGuard(solutionDirectory);
+        _utilities.IsSolutionDirectoryGuard(solutionDirectory, true);
         _scaffoldingDirectoryStore.SetSolutionDirectory(solutionDirectory);
 
         var projectName = new DirectoryInfo(potentialBoundaryDirectory).Name;
@@ -77,7 +77,6 @@ public class AddConsumerCommand : Command<AddConsumerCommand.Settings>
             new MassTransitModifier(_fileSystem).AddConsumerRegistation(srcDirectory, consumer.EndpointRegistrationMethodName, projectBaseName);
 
             new IntegrationTestFixtureModifier(_fileSystem).AddMasstransitConsumer(testDirectory, consumer.ConsumerName, consumer.DomainDirectory, projectBaseName, srcDirectory);
-            new ConsumerTestBuilder(_utilities).CreateTests(solutionDirectory, testDirectory, srcDirectory, consumer, projectBaseName);
         });
     }
 }

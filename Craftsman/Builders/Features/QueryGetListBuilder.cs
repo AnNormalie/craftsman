@@ -24,7 +24,7 @@ public class QueryGetListBuilder
     public static string GetQueryFileText(string classNamespace, Entity entity, string srcDirectory, string projectBaseName, bool isProtected, string permissionName)
     {
         var className = FileNames.GetEntityListFeatureClassName(entity.Name);
-        var queryListName = FileNames.QueryListName(entity.Name);
+        var queryListName = FileNames.QueryListName();
         var readDto = FileNames.GetDtoName(entity.Name, Dto.Read);
         var paramsDto = FileNames.GetDtoName(entity.Name, Dto.ReadParamaters);
         var primaryKeyPropName = Entity.PrimaryKeyProperty.Name;
@@ -52,6 +52,7 @@ using {dtoClassPath.ClassNamespace};
 using {entityServicesClassPath.ClassNamespace};
 using {wrapperClassPath.ClassNamespace};
 using {exceptionsClassPath.ClassNamespace};{permissionsUsing}
+using Microsoft.EntityFrameworkCore;
 using MapsterMapper;
 using Mapster;
 using MediatR;
@@ -60,7 +61,7 @@ using Sieve.Services;
 
 public static class {className}
 {{
-    public class {queryListName} : IRequest<PagedList<{readDto }>>
+    public sealed class {queryListName} : IRequest<PagedList<{readDto }>>
     {{
         public readonly {paramsDto} QueryParameters;
 
@@ -70,7 +71,7 @@ public static class {className}
         }}
     }}
 
-    public class Handler : IRequestHandler<{queryListName}, PagedList<{readDto}>>
+    public sealed class Handler : IRequestHandler<{queryListName}, PagedList<{readDto}>>
     {{
         private readonly {repoInterface} _{repoInterfaceProp};
         private readonly SieveProcessor _sieveProcessor;
@@ -85,11 +86,11 @@ public static class {className}
 
         public async Task<PagedList<{readDto}>> Handle({queryListName} request, CancellationToken cancellationToken)
         {{{permissionCheck}
-            var collection = _{repoInterfaceProp}.Query();
+            var collection = _{repoInterfaceProp}.Query().AsNoTracking();
 
             var sieveModel = new SieveModel
             {{
-                Sorts = request.QueryParameters.SortOrder ?? ""{primaryKeyPropName}"",
+                Sorts = request.QueryParameters.SortOrder ?? ""-CreatedOn"",
                 Filters = request.QueryParameters.Filters
             }};
 

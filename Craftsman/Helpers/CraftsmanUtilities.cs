@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Domain;
+using Domain.Enums;
 using Exceptions;
 using Services;
 using Spectre.Console;
@@ -19,7 +20,8 @@ public interface ICraftsmanUtilities
     void AddProjectReference(IClassPath classPath, string relativeProjectPath);
     void CreateFile(IClassPath classPath, string fileText);
     string GetDbContext(string srcDirectory, string projectBaseName);
-    void IsSolutionDirectoryGuard(string proposedDirectory);
+    void IsSolutionDirectoryGuard(string proposedDirectory, bool slnIsInParent = false);
+    void IsNextJsRootDir(string proposedDirectory);
     bool ProjectUsesSoftDelete(string srcDirectory, string projectBaseName);
     string GetRootDir();
     void IsBoundedContextDirectoryGuard();
@@ -59,10 +61,23 @@ public class CraftsmanUtilities : ICraftsmanUtilities
         return "";
     }
 
-    public void IsSolutionDirectoryGuard(string proposedDirectory)
+    public void IsSolutionDirectoryGuard(string proposedDirectory, bool slnIsInParent = false)
     {
-        if (!_fileSystem.Directory.EnumerateFiles(proposedDirectory, "*.sln").Any())
-            throw new SolutionNotFoundException();
+        if (_fileSystem.Directory.EnumerateFiles(proposedDirectory, "*.sln").Any())
+            return;
+
+        if(slnIsInParent) 
+            throw new SolutionNotFoundException("A solution file was not found in the parent directory. You might need to go down one level to your boundary directory (has 'src' and 'test' directories) and run your command there instead.");
+
+        throw new SolutionNotFoundException();
+    }
+
+    public void IsNextJsRootDir(string proposedDirectory)
+    {
+        if (_fileSystem.Directory.EnumerateFiles(proposedDirectory, "next.config*").Any())
+            return;
+        
+        throw new NextConfigNotFoundException();
     }
 
     public void CreateFile(IClassPath classPath, string fileText)
@@ -128,31 +143,35 @@ using {parentClassPath.ClassNamespace};";
         };
     }
 
-    public static string PropTypeCleanupTypeScript(string prop)
+    public static TypescriptPropertyType PropTypeCleanupTypeScript(string prop)
     {
         return prop.ToLower() switch
         {
-            "boolean" => "boolean",
-            "bool" => "boolean",
-            "number" => "number",
-            "int" => "number",
-            "string" => "string",
-            "dateonly" => "Date",
-            "timeonly" => "Date",
-            "datetimeoffset" => "Date",
-            "guid" => "string",
-            "uuid" => "string",
-            "boolean?" => "boolean?",
-            "bool?" => "boolean?",
-            "number?" => "number?",
-            "int?" => "number?",
-            "string?" => "string?",
-            "dateonly?" => "Date?",
-            "timeonly?" => "Date?",
-            "datetimeoffset?" => "Date?",
-            "guid?" => "string?",
-            "uuid?" => "string?",
-            _ => prop
+            "boolean" => TypescriptPropertyType.BooleanProperty,
+            "bool" => TypescriptPropertyType.BooleanProperty,
+            "number" => TypescriptPropertyType.NumberProperty,
+            "int" => TypescriptPropertyType.NumberProperty,
+            "string" => TypescriptPropertyType.StringProperty,
+            "datetime" => TypescriptPropertyType.DateProperty,
+            "dateonly" => TypescriptPropertyType.DateProperty,
+            "date" => TypescriptPropertyType.DateProperty,
+            "timeonly" => TypescriptPropertyType.DateProperty,
+            "datetimeoffset" => TypescriptPropertyType.DateProperty,
+            "guid" => TypescriptPropertyType.StringProperty,
+            "uuid" => TypescriptPropertyType.StringProperty,
+            "boolean?" => TypescriptPropertyType.NullableBooleanProperty,
+            "bool?" => TypescriptPropertyType.NullableBooleanProperty,
+            "number?" => TypescriptPropertyType.NullableNumberProperty,
+            "int?" => TypescriptPropertyType.NullableNumberProperty,
+            "string?" => TypescriptPropertyType.NullableStringProperty,
+            "date?" => TypescriptPropertyType.DateProperty,
+            "datetime?" => TypescriptPropertyType.DateProperty,
+            "dateonly?" => TypescriptPropertyType.NullableDateProperty,
+            "timeonly?" => TypescriptPropertyType.NullableDateProperty,
+            "datetimeoffset?" => TypescriptPropertyType.NullableDateProperty,
+            "guid?" => TypescriptPropertyType.NullableStringProperty,
+            "uuid?" => TypescriptPropertyType.NullableStringProperty,
+            _ => prop.Contains('?') ? TypescriptPropertyType.NullableOther : TypescriptPropertyType.Other
         };
     }
 

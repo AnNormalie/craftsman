@@ -12,49 +12,100 @@ public class FunctionalTestBaseBuilder
         _utilities = utilities;
     }
 
-    public void CreateBase(string solutionDirectory, string projectBaseName, string dbContextName)
+    public void CreateBase(string srcDirectory, string testDirectory, string projectBaseName, string dbContextName, bool hasAuth)
     {
-        var classPath = ClassPathHelper.FunctionalTestProjectRootClassPath(solutionDirectory, "TestBase.cs", projectBaseName);
-        var fileText = GetBaseText(classPath.ClassNamespace, solutionDirectory, projectBaseName, dbContextName);
+        var classPath = ClassPathHelper.FunctionalTestProjectRootClassPath(testDirectory, "TestBase.cs", projectBaseName);
+        var fileText = GetBaseText(classPath.ClassNamespace, srcDirectory, testDirectory, projectBaseName, dbContextName, hasAuth);
         _utilities.CreateFile(classPath, fileText);
     }
 
-    public static string GetBaseText(string classNamespace, string solutionDirectory, string projectBaseName, string dbContextName)
+    public static string GetBaseText(string classNamespace, string srcDirectory, string testDirectory, string projectBaseName, string dbContextName, bool hasAuth)
     {
-        var contextClassPath = ClassPathHelper.DbContextClassPath(solutionDirectory, "", projectBaseName);
-        var apiClassPath = ClassPathHelper.WebApiProjectRootClassPath(solutionDirectory, "", projectBaseName);
+        var contextClassPath = ClassPathHelper.DbContextClassPath(testDirectory, "", projectBaseName);
+        var apiClassPath = ClassPathHelper.WebApiProjectRootClassPath(testDirectory, "", projectBaseName);
+        var rolesEntityClassPath = ClassPathHelper.EntityClassPath(srcDirectory, "", "Roles", projectBaseName);
+        var usersEntityClassPath = ClassPathHelper.EntityClassPath(srcDirectory, "", "Users", projectBaseName);
+        var fakeUserEntityClassPath = ClassPathHelper.TestFakesClassPath(testDirectory, "", "User", projectBaseName);
 
+        var authUsings = hasAuth ? $@"
+using {rolesEntityClassPath.ClassNamespace};
+using {usersEntityClassPath.ClassNamespace};
+using {fakeUserEntityClassPath.ClassNamespace};" : null;
+
+        var authHelperMethods = hasAuth
+            ? $@"
+
+    public static async Task<User> AddNewSuperAdmin()
+    {{
+        var user = new FakeUserBuilder().Build();
+        user.AddRole(Role.SuperAdmin());
+        await InsertAsync(user);
+        return user;
+    }}
+
+    public static async Task<User> AddNewUser(List<Role> roles)
+    {{
+        var user = new FakeUserBuilder().Build();
+        foreach (var role in roles)
+            user.AddRole(role);
+        
+        await InsertAsync(user);
+        return user;
+    }}
+
+    public static async Task<User> AddNewUser(params Role[] roles)
+        => await AddNewUser(roles.ToList());"
+            : null;
+
+        var seedRootUser = hasAuth
+            ? $@"
+        
+        // seed root user so tests won't always have user as super admin
+        AddNewSuperAdmin().Wait();"
+            : null;
+        
         return @$"namespace {classNamespace};
 
 using {contextClassPath.ClassNamespace};
-using {apiClassPath.ClassNamespace};
+using {apiClassPath.ClassNamespace};{authUsings}
+using AutoBogus;
 using MediatR;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
 using System.Threading.Tasks;
-
-[Parallelizable]
-public class TestBase
+using Xunit;
+ 
+[Collection(nameof(TestBase))]
+public class TestBase : IDisposable
 {{
-    public static IServiceScopeFactory _scopeFactory;
-    public static WebApplicationFactory<Program> _factory;
-    public static HttpClient _client;
+    private static IServiceScopeFactory _scopeFactory;
+    protected static HttpClient FactoryClient  {{ get; private set; }}
 
-    [SetUp]
-    public void TestSetUp()
+    public TestBase()
     {{
-        _factory = new {FileNames.GetWebHostFactoryName()}();
-        _scopeFactory = _factory.Services.GetRequiredService<IServiceScopeFactory>();
-        _client = _factory.CreateClient(new WebApplicationFactoryClientOptions());
+        var factory = new TestingWebApplicationFactory();
+        _scopeFactory = factory.Services.GetRequiredService<IServiceScopeFactory>();
+        FactoryClient = factory.CreateClient(new WebApplicationFactoryClientOptions());
+
+        AutoFaker.Configure(builder =>
+        {{
+            // configure global autobogus settings here
+            builder.WithDateTimeKind(DateTimeKind.Utc)
+                .WithRecursiveDepth(3)
+                .WithTreeDepth(1)
+                .WithRepeatCount(1);
+        }});{seedRootUser}
+    }}
+    
+    public void Dispose()
+    {{
+        FactoryClient.Dispose();
     }}
 
     public static async Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request)
     {{
         using var scope = _scopeFactory.CreateScope();
-
         var mediator = scope.ServiceProvider.GetService<ISender>();
-
         return await mediator.Send(request);
     }}
 
@@ -62,9 +113,7 @@ public class TestBase
         where TEntity : class
     {{
         using var scope = _scopeFactory.CreateScope();
-
         var context = scope.ServiceProvider.GetService<{dbContextName}>();
-
         return await context.FindAsync<TEntity>(keyValues);
     }}
 
@@ -72,11 +121,8 @@ public class TestBase
         where TEntity : class
     {{
         using var scope = _scopeFactory.CreateScope();
-
         var context = scope.ServiceProvider.GetService<{dbContextName}>();
-
         context.Add(entity);
-
         await context.SaveChangesAsync();
     }}
 
@@ -84,42 +130,14 @@ public class TestBase
     {{
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<{dbContextName}>();
-
-        try
-        {{
-            //await dbContext.BeginTransactionAsync();
-
-            await action(scope.ServiceProvider);
-
-            //await dbContext.CommitTransactionAsync();
-        }}
-        catch (Exception)
-        {{
-            //dbContext.RollbackTransaction();
-            throw;
-        }}
+        await action(scope.ServiceProvider);
     }}
 
     public static async Task<T> ExecuteScopeAsync<T>(Func<IServiceProvider, Task<T>> action)
     {{
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<{dbContextName}>();
-
-        try
-        {{
-            //await dbContext.BeginTransactionAsync();
-
-            var result = await action(scope.ServiceProvider);
-
-            //await dbContext.CommitTransactionAsync();
-
-            return result;
-        }}
-        catch (Exception)
-        {{
-            //dbContext.RollbackTransaction();
-            throw;
-        }}
+        return await action(scope.ServiceProvider);
     }}
 
     public static Task ExecuteDbContextAsync(Func<{dbContextName}, Task> action)
@@ -150,7 +168,7 @@ public class TestBase
             }}
             return db.SaveChangesAsync();
         }});
-    }}
+    }}{authHelperMethods}
 }}";
     }
 }

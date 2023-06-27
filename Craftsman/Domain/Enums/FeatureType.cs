@@ -11,7 +11,7 @@ public abstract class FeatureType : SmartEnum<FeatureType>
     public static readonly FeatureType AddRecord = new AddRecordType();
     public static readonly FeatureType DeleteRecord = new DeleteRecordType();
     public static readonly FeatureType UpdateRecord = new UpdateRecordType();
-    public static readonly FeatureType PatchRecord = new PatchRecordType();
+    // public static readonly FeatureType PatchRecord = new PatchRecordType();
     public static readonly FeatureType AdHoc = new AdHocType();
     public static readonly FeatureType AddListByFk = new AddListByFkType();
 
@@ -21,6 +21,8 @@ public abstract class FeatureType : SmartEnum<FeatureType>
     public abstract string FeatureName(string entityName, string featureName = null);
     public abstract string CommandName(string command, string entityName);
     public abstract string BffApiName(string entityName);
+    public abstract string NextJsApiName(string entityName);
+    public abstract string DefaultPermission(string entityPlural);
 
     private class GetRecordType : FeatureType
     {
@@ -32,6 +34,10 @@ public abstract class FeatureType : SmartEnum<FeatureType>
             => command.EscapeSpaces() ?? $"Get{entityName}Query";
         public override string BffApiName(string entityName)
             => $"get{entityName}";
+        public override string NextJsApiName(string entityName)
+            => $"get{entityName}";
+        public override string DefaultPermission(string entityPlural)
+            => $"CanRead{entityPlural}";
     }
 
     private class GetListType : FeatureType
@@ -44,6 +50,10 @@ public abstract class FeatureType : SmartEnum<FeatureType>
             => command.EscapeSpaces() ?? $"Get{entityName}ListQuery";
         public override string BffApiName(string entityName)
             => $"get{entityName}List";
+        public override string NextJsApiName(string entityName)
+            => $"get{entityName}List";
+        public override string DefaultPermission(string entityPlural)
+            => $"CanRead{entityPlural}";
     }
 
     private class AddRecordType : FeatureType
@@ -56,6 +66,10 @@ public abstract class FeatureType : SmartEnum<FeatureType>
             => command.EscapeSpaces() ?? $"Add{entityName}Command";
         public override string BffApiName(string entityName)
             => $"add{entityName}";
+        public override string NextJsApiName(string entityName)
+            => $"add{entityName}";
+        public override string DefaultPermission(string entityPlural)
+            => $"CanAdd{entityPlural}";
     }
 
     private class DeleteRecordType : FeatureType
@@ -68,6 +82,10 @@ public abstract class FeatureType : SmartEnum<FeatureType>
             => command.EscapeSpaces() ?? $"Delete{entityName}Command";
         public override string BffApiName(string entityName)
             => $"delete{entityName}";
+        public override string NextJsApiName(string entityName)
+            => $"delete{entityName}";
+        public override string DefaultPermission(string entityPlural)
+            => $"CanDelete{entityPlural}";
     }
 
 
@@ -81,20 +99,24 @@ public abstract class FeatureType : SmartEnum<FeatureType>
             => command.EscapeSpaces() ?? $"Update{entityName}Command";
         public override string BffApiName(string entityName)
             => $"update{entityName}";
+        public override string NextJsApiName(string entityName)
+            => $"update{entityName}";
+        public override string DefaultPermission(string entityPlural)
+            => $"CanUpdate{entityPlural}";
     }
 
 
-    private class PatchRecordType : FeatureType
-    {
-        public PatchRecordType() : base(nameof(PatchRecord), 6) { }
-
-        public override string FeatureName(string entityName, string featureName = null)
-            => featureName.EscapeSpaces() ?? $"Patch{entityName}";
-        public override string CommandName(string command, string entityName)
-            => command.EscapeSpaces() ?? $"Patch{entityName}Command";
-        public override string BffApiName(string entityName)
-            => throw new Exception("Patch Features need to be manually configured in a BFF.");
-    }
+    // private class PatchRecordType : FeatureType
+    // {
+    //     public PatchRecordType() : base(nameof(PatchRecord), 6) { }
+    //
+    //     public override string FeatureName(string entityName, string featureName = null)
+    //         => featureName.EscapeSpaces() ?? $"Patch{entityName}";
+    //     public override string CommandName(string command, string entityName)
+    //         => command.EscapeSpaces() ?? $"Patch{entityName}Command";
+    //     public override string BffApiName(string entityName)
+    //         => throw new Exception("Patch Features need to be manually configured in a BFF.");
+    // }
 
 
     private class AdHocType : FeatureType
@@ -107,6 +129,10 @@ public abstract class FeatureType : SmartEnum<FeatureType>
             => command.EscapeSpaces() ?? throw new Exception("Ad Hoc Features require a name path.");
         public override string BffApiName(string entityName)
             => throw new Exception("Ad Hoc Features need to be manually configured in a BFF.");
+        public override string NextJsApiName(string entityName)
+            => throw new Exception("Ad Hoc Features need to be manually configured in a BFF.");
+        public override string DefaultPermission(string entityPlural)
+            => $"CanPerformAdHocFeature";
     }
 
     private class AddListByFkType : FeatureType
@@ -119,5 +145,9 @@ public abstract class FeatureType : SmartEnum<FeatureType>
             => command.EscapeSpaces() ?? $"Add{entityName}ListCommand";
         public override string BffApiName(string entityName)
             => throw new Exception("Add List Features need to be manually configured in a BFF.");
+        public override string NextJsApiName(string entityName)
+            => throw new Exception("Add List Features need to be manually configured in a BFF.");
+        public override string DefaultPermission(string entityPlural)
+            => $"CanAdd{entityPlural}";
     }
 }

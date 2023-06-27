@@ -25,11 +25,12 @@ public class CommandPatchRecordBuilder
     public static string GetCommandFileText(string classNamespace, Entity entity, string srcDirectory, string projectBaseName, bool isProtected, string permissionName)
     {
         var className = FileNames.PatchEntityFeatureClassName(entity.Name);
-        var patchCommandName = FileNames.CommandPatchName(entity.Name);
+        var patchCommandName = FileNames.CommandPatchName();
         var updateDto = FileNames.GetDtoName(entity.Name, Dto.Update);
 
         var primaryKeyPropType = Entity.PrimaryKeyProperty.Type;
         var primaryKeyPropName = Entity.PrimaryKeyProperty.Name;
+        var primaryKeyPropNameLowercase = primaryKeyPropName.LowercaseFirstLetter();
         var entityNameLowercase = entity.Name.LowercaseFirstLetter();
         var updatedEntityProp = $"{entityNameLowercase}ToUpdate";
         var patchedEntityProp = $"{entityNameLowercase}ToPatch";
@@ -64,19 +65,19 @@ using Microsoft.AspNetCore.JsonPatch;
 
 public static class {className}
 {{
-    public class {patchCommandName} : IRequest<bool>
+    public sealed class {patchCommandName} : IRequest<bool>
     {{
         public readonly {primaryKeyPropType} {primaryKeyPropName};
         public readonly JsonPatchDocument<{updateDto}> PatchDoc;
 
-        public {patchCommandName}({primaryKeyPropType} {entityNameLowercase}, JsonPatchDocument<{updateDto}> patchDoc)
+        public {patchCommandName}({primaryKeyPropType} {primaryKeyPropNameLowercase}, JsonPatchDocument<{updateDto}> patchDoc)
         {{
-            {primaryKeyPropName} = {entityNameLowercase};
+            {primaryKeyPropName} = {primaryKeyPropNameLowercase};
             PatchDoc = patchDoc;
         }}
     }}
 
-    public class Handler : IRequestHandler<{patchCommandName}, bool>
+    public sealed class Handler : IRequestHandler<{patchCommandName}, bool>
     {{
         private readonly {repoInterface} _{repoInterfaceProp};
         private readonly IUnitOfWork _unitOfWork;

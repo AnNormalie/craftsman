@@ -10,6 +10,12 @@ public static class ValueObjectMappingsBuilder
 {
     public class ValueObjectMappingsBuilderCommand : IRequest<bool>
     {
+        public readonly bool HasAuth;
+
+        public ValueObjectMappingsBuilderCommand(bool hasAuth)
+        {
+            HasAuth = hasAuth;
+        }
     }
 
     public class Handler : IRequestHandler<ValueObjectMappingsBuilderCommand, bool>
@@ -43,7 +49,22 @@ public static class ValueObjectMappingsBuilder
                 _scaffoldingDirectoryStore.ProjectBaseName);
             var monetaryAmountFileText = GetMonetaryAmountFileText(monetaryAmountClassPath.ClassNamespace);
             _utilities.CreateFile(monetaryAmountClassPath, monetaryAmountFileText);
+            
+            var emailClassPath = ClassPathHelper.WebApiValueObjectMappingsClassPath(_scaffoldingDirectoryStore.SrcDirectory, 
+                ValueObjectEnum.Email,
+                _scaffoldingDirectoryStore.ProjectBaseName);
+            var emailFileText = GetEmailFileText(emailClassPath.ClassNamespace);
+            _utilities.CreateFile(emailClassPath, emailFileText);
 
+            if (request.HasAuth)
+            {
+                var roleClassPath = ClassPathHelper.WebApiValueObjectMappingsClassPath(_scaffoldingDirectoryStore.SrcDirectory, 
+                    ValueObjectEnum.Role,
+                    _scaffoldingDirectoryStore.ProjectBaseName);
+                var roleFileText = GetRoleFileText(roleClassPath.ClassNamespace);
+                _utilities.CreateFile(roleClassPath, roleFileText);
+            }
+            
             return Task.FromResult(true);
         }
         
@@ -57,7 +78,7 @@ public static class ValueObjectMappingsBuilder
 using {voClassPath.ClassNamespace};
 using Mapster;
 
-public class {mappingName} : IRegister
+public sealed class {mappingName} : IRegister
 {{
     public void Register(TypeAdapterConfig config)
     {{
@@ -84,7 +105,7 @@ using {dtoClassPath.ClassNamespace};
 using {voClassPath.ClassNamespace};
 using Mapster;
 
-public class {mappingName} : IRegister
+public sealed class {mappingName} : IRegister
 {{
     public void Register(TypeAdapterConfig config)
     {{
@@ -116,7 +137,7 @@ public class {mappingName} : IRegister
 using {voClassPath.ClassNamespace};
 using Mapster;
 
-public class {mappingName} : IRegister
+public sealed class {mappingName} : IRegister
 {{
     public void Register(TypeAdapterConfig config)
     {{
@@ -124,6 +145,50 @@ public class {mappingName} : IRegister
             .MapWith(value => new MonetaryAmount(value));
         config.NewConfig<MonetaryAmount, decimal>()
             .MapWith(monetaryAmount => monetaryAmount.Amount);
+    }}
+}}";
+        }
+        
+        private string GetRoleFileText(string classNamespace)
+        {
+            var mappingName = FileNames.GetMappingName(ValueObjectEnum.Role.Name);
+            var voClassPath = ClassPathHelper.SharedKernelDomainClassPath(_scaffoldingDirectoryStore.SolutionDirectory, "");
+            
+            return @$"namespace {classNamespace};
+
+using {voClassPath.ClassNamespace};
+using Mapster;
+
+public sealed class {mappingName} : IRegister
+{{
+    public void Register(TypeAdapterConfig config)
+    {{
+        config.NewConfig<string, Role>()
+            .MapWith(value => new Role(value));
+        config.NewConfig<Role, string>()
+            .MapWith(role => role.Value);
+    }}
+}}";
+        }
+        
+        private string GetEmailFileText(string classNamespace)
+        {
+            var mappingName = FileNames.GetMappingName(ValueObjectEnum.Email.Name);
+            var voClassPath = ClassPathHelper.SharedKernelDomainClassPath(_scaffoldingDirectoryStore.SolutionDirectory, "");
+            
+            return @$"namespace {classNamespace};
+
+using {voClassPath.ClassNamespace};
+using Mapster;
+
+public sealed class {mappingName} : IRegister
+{{
+    public void Register(TypeAdapterConfig config)
+    {{
+        config.NewConfig<string, Email>()
+            .MapWith(value => new Email(value));
+        config.NewConfig<Email, string>()
+            .MapWith(email => email.Value);
     }}
 }}";
         }

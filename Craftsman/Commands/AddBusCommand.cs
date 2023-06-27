@@ -45,7 +45,7 @@ public class AddBusCommand : Command<AddBusCommand.Settings>
         var potentialBoundaryDirectory = _utilities.GetRootDir();
 
         var solutionDirectory = _fileSystem.Directory.GetParent(potentialBoundaryDirectory)?.FullName;
-        _utilities.IsSolutionDirectoryGuard(solutionDirectory);
+        _utilities.IsSolutionDirectoryGuard(solutionDirectory, true);
         _scaffoldingDirectoryStore.SetSolutionDirectory(solutionDirectory);
 
         var projectName = new DirectoryInfo(potentialBoundaryDirectory).Name;
@@ -76,8 +76,8 @@ public class AddBusCommand : Command<AddBusCommand.Settings>
     public void AddBus(Bus template, string srcDirectory, string testDirectory, string projectBaseName, string solutionDirectory)
     {
         var massTransitPackages = new Dictionary<string, string>{
-            { "MassTransit", "8.0.1" },
-            { "MassTransit.RabbitMQ", "8.0.1" }
+            { "MassTransit", "8.0.12" },
+            { "MassTransit.RabbitMQ", "8.0.12" }
         };
         var webApiClassPath = ClassPathHelper.WebApiProjectClassPath(srcDirectory, projectBaseName);
         _utilities.AddPackages(webApiClassPath, massTransitPackages);

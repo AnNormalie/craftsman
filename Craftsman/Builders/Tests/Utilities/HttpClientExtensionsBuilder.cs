@@ -23,22 +23,24 @@ public class HttpClientExtensionsBuilder
     {
         return @$"namespace {classPath.ClassNamespace};
 
-using Microsoft.AspNetCore.JsonPatch;
-using Newtonsoft.Json;
-using System.Dynamic;
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
+using System.Security.Claims;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Extensions.Services;
 
 public static class HttpClientExtensions
 {{
-    public static HttpClient AddAuth(this HttpClient client, params string[] roles)
+    public static HttpClient AddAuth(this HttpClient client, string nameIdentifier = null)
     {{
-        dynamic data = new ExpandoObject();
-        data.sub = Guid.NewGuid();
-        data.role = roles;
-        client.SetFakeBearerToken((object)data);
+        nameIdentifier ??= Guid.NewGuid().ToString();
+        var claims = new Dictionary<string, string>()
+        {{
+            {{ ClaimTypes.NameIdentifier , nameIdentifier }},
+        }};
+        
+        client.SetFakeBearerToken(claims);
 
         return client;
     }}
@@ -55,25 +57,14 @@ public static class HttpClientExtensions
 
     public static async Task<HttpResponseMessage> PostJsonRequestAsync(this HttpClient client, string url, object value)
     {{
-        return await client.PostAsJsonAsync(url, value).ConfigureAwait(false);
+        var options = new JsonSerializerOptions();
+        return await client.PostAsJsonAsync(url, value, options).ConfigureAwait(false);
     }}
 
     public static async Task<HttpResponseMessage> PutJsonRequestAsync(this HttpClient client, string url, object value)
     {{
-        return await client.PutAsJsonAsync(url, value).ConfigureAwait(false);
-    }}
-
-    public static async Task<HttpResponseMessage> PatchJsonRequestAsync<TModel>(this HttpClient client, string url, JsonPatchDocument<TModel> patchDoc)
-        where TModel : class
-    {{
-        var serializedRecipeToUpdate = JsonConvert.SerializeObject(patchDoc);
-
-        var patchRequest = new HttpRequestMessage(new HttpMethod(""PATCH""), url)
-        {{
-            Content = new StringContent(serializedRecipeToUpdate, Encoding.Unicode, ""application/json"")
-        }};
-
-        return await client.SendAsync(patchRequest).ConfigureAwait(false);
+        var options = new JsonSerializerOptions();
+        return await client.PutAsJsonAsync(url, value, options).ConfigureAwait(false);
     }}
 }}";
     }

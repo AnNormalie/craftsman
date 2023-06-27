@@ -46,7 +46,7 @@ using {dtoClassPath.ClassNamespace};
 using {testUtilClassPath.ClassNamespace};{permissionsUsing}
 using Microsoft.AspNetCore.JsonPatch;
 using FluentAssertions;
-using NUnit.Framework;
+using Xunit;
 using System.Net;
 using System.Threading.Tasks;
 using Bogus;
@@ -73,7 +73,8 @@ public class {Path.GetFileNameWithoutExtension(classPath.FullClassPath)} : TestB
         testName += isProtected ? "_and__valid_auth_credentials" : "";
         var clientAuth = isProtected ? @$"
 
-        _client.AddAuth(new[] {{Roles.SuperAdmin}});" : "";
+        var user = await AddNewSuperAdmin();
+        FactoryClient.AddAuth(user.Identifier);" : "";
 
         // if no string properties, do one with an int
         if (myProp == null)
@@ -85,7 +86,7 @@ public class {Path.GetFileNameWithoutExtension(classPath.FullClassPath)} : TestB
         if (myProp == null)
             return "// no patch tests were created";
 
-        return $@"[Test]
+        return $@"[Fact]
     public async Task {testName}()
     {{
         // Arrange
@@ -95,8 +96,8 @@ public class {Path.GetFileNameWithoutExtension(classPath.FullClassPath)} : TestB
         await InsertAsync({fakeEntityVariableName});
 
         // Act
-        var route = ApiRoutes.{entity.Plural}.Patch.Replace(ApiRoutes.{entity.Plural}.{pkName}, {fakeEntityVariableName}.{pkName}.ToString());
-        var result = await _client.PatchJsonRequestAsync(route, patchDoc);
+        var route = ApiRoutes.{entity.Plural}.Patch({fakeEntityVariableName}.{pkName});
+        var result = await FactoryClient.PatchJsonRequestAsync(route, patchDoc);
 
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -114,7 +115,7 @@ public class {Path.GetFileNameWithoutExtension(classPath.FullClassPath)} : TestB
         var fakeCreationDto = FileNames.FakerName(FileNames.GetDtoName(entity.Name, Dto.Creation));
 
         return $@"
-    [Test]
+    [Fact]
     public async Task patch_{entity.Name.ToLower()}_returns_unauthorized_without_valid_token()
     {{
         // Arrange
@@ -122,11 +123,9 @@ public class {Path.GetFileNameWithoutExtension(classPath.FullClassPath)} : TestB
         var patchDoc = new JsonPatchDocument<{updateDto}>();
         patchDoc.Replace({entity.Lambda} => {entity.Lambda}.{myProp.Name}, {lookupVal});
 
-        await InsertAsync({fakeEntityVariableName});
-
         // Act
-        var route = ApiRoutes.{entity.Plural}.Patch.Replace(ApiRoutes.{entity.Plural}.{pkName}, {fakeEntityVariableName}.{pkName}.ToString());
-        var result = await _client.PatchJsonRequestAsync(route, patchDoc);
+        var route = ApiRoutes.{entity.Plural}.Patch({fakeEntityVariableName}.{pkName});
+        var result = await FactoryClient.PatchJsonRequestAsync(route, patchDoc);
 
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -144,20 +143,18 @@ public class {Path.GetFileNameWithoutExtension(classPath.FullClassPath)} : TestB
         var fakeCreationDto = FileNames.FakerName(FileNames.GetDtoName(entity.Name, Dto.Creation));
 
         return $@"
-    [Test]
+    [Fact]
     public async Task patch_{entity.Name.ToLower()}_returns_forbidden_without_proper_scope()
     {{
         // Arrange
         var {fakeEntityVariableName} = {fakeEntity}.Generate(new {fakeCreationDto}().Generate());
         var patchDoc = new JsonPatchDocument<{updateDto}>();
         patchDoc.Replace({entity.Lambda} => {entity.Lambda}.{myProp.Name}, {lookupVal});
-        _client.AddAuth();
-
-        await InsertAsync({fakeEntityVariableName});
+        FactoryClient.AddAuth();
 
         // Act
-        var route = ApiRoutes.{entity.Plural}.Patch.Replace(ApiRoutes.{entity.Plural}.{pkName}, {fakeEntityVariableName}.{pkName}.ToString());
-        var result = await _client.PatchJsonRequestAsync(route, patchDoc);
+        var route = ApiRoutes.{entity.Plural}.Patch({fakeEntityVariableName}.{pkName});
+        var result = await FactoryClient.PatchJsonRequestAsync(route, patchDoc);
 
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.Forbidden);

@@ -43,7 +43,7 @@ public class AddEntityCommand : Command<AddEntityCommand.Settings>
         var potentialBoundaryDirectory = _utilities.GetRootDir();
 
         var solutionDirectory = _fileSystem.Directory.GetParent(potentialBoundaryDirectory)?.FullName;
-        _utilities.IsSolutionDirectoryGuard(solutionDirectory);
+        _utilities.IsSolutionDirectoryGuard(solutionDirectory, true);
         _scaffoldingDirectoryStore.SetSolutionDirectory(solutionDirectory);
 
         var projectName = new DirectoryInfo(potentialBoundaryDirectory).Name;
@@ -78,8 +78,6 @@ public class AddEntityCommand : Command<AddEntityCommand.Settings>
             template.DbContextName,
             template.AddSwaggerComments,
             useSoftDelete);
-
-        new DbContextModifier(_fileSystem).AddDbSet(srcDirectory, template.Entities, template.DbContextName, _scaffoldingDirectoryStore.ProjectBaseName);
     }
 
     private AddEntityTemplate GetDbContext(string srcDirectory, AddEntityTemplate template, string projectBaseName)

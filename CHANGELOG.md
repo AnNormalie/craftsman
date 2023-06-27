@@ -9,7 +9,216 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
-* None yet!
+## [0.20.0] - 04/08/2023
+
+### Added
+
+* Specification support in repositories
+* Support for array property types
+
+### Updates
+
+* No more manipulation DTO
+* No default new guid on DTO
+* Tests use builder methods
+* No more autofaker for domain entity, only a builder
+* Entity properties not virtualized anymore
+* `IProjectService` renamed to `IProjectScopedService`
+
+## [0.19.4] - 03/05/2023
+
+### Updates
+
+* Removed extra db call on `Add` feature
+
+## [0.19.3] - 03/05/2023
+
+### Fixed
+
+* Fix bracket on DTOs 
+
+## [0.19.2] - 03/05/2023
+
+### Fixed
+
+* DTO indentations
+
+## [0.19.1] - 02/04/2023
+
+### Updates
+
+* Removed custom dateonly and timeonly json converters in facor of built in .net 7 options
+
+## [0.19.0] - 02/04/2023
+
+### Updates
+
+* Crafstman uses .NET 7
+* Scaffolding uses .NET 7
+* Test projects updated to use XUnit
+* Integration tests have better service collection scoping and now have a service collection per test. This makes service mocking possible without clashing with other tests
+* RMQ container setup for integration and functional tests
+* Use `IConfiguration` instead of custom `EnvironmentService` 
+* Move parameters from `launchsetting`  to `appsettings`
+* `UserPolicyHandler` refactor
+* Unit tests no longer have redundant directory
+* Added optional unit test to check protection of all endpoints
+* Tweaked unit test assembly helper utility
+* Bump nuget packages
+
+### Removed
+
+* No more event handler test scaffolding
+
+## [0.18.0] - 01/07/2023
+
+### Added
+
+* New `MigrationHostedService` to automatically apply migrations when starting your project
+* New `EnvironmentService` for easy access to environment variables
+
+### Updates
+
+* Removed `Validators` and in favor of direct validation in entiy factories and methods.
+* Additional helper methods on `ValidationException`
+* Additional OTel config
+* Cleaner functional test helpers
+* Bump HeimGuard
+* Update `UserPolicyHandler` to include a `HasPermission()` implementation
+* Json attribute refactor
+* Simplify swagger comments
+
+### Fixes
+
+* RMQ Password var
+* Email guards for whitespace
+* Minor spacing items
+
+## [0.17.2] - 10/24/2022
+
+### Fixes
+
+- Resolves mismatch on name for GET record endpoint
+
+## [0.17.1] - 10/23/2022
+
+### Fixes
+
+- typo on validation for exchange [#100](https://github.com/pdevito3/craftsman/pull/100) (thanks [@MeladKamari](https://github.com/MeladKamari))
+- potential process clashing resolution
+
+## [0.17.0] - 10/20/2022
+
+### Added
+
+* Test Utility Mapper for Unit Tests
+
+* New `User` and `UserRole` entities when using auth
+  * Your auth server will still store users, but it's *only* role is now AuthN. The basic premise is still the same though
+
+    * `Authorize` attributes on your controllers will guard for application level access by checking if the request has a valid JWT from your auth server
+
+    * Feature and business level access can be handled in your MediatR handlers with HeimGuard, for example:
+
+      ```c#
+      await _heimGuard.HasPermissionAsync("RecipesFullAccess") 
+                ? Ok()
+                : Forbidden();
+      
+      // OR...  
+      
+      await _heimGuard.MustHavePermission<ForbiddenAccessException>(Permissions.CanAddRecipe);
+      ```
+
+    * As usual, this will use the `UserPolicyHandler` logic to check if a user meets the given criteria. The implementation of HeimGuard's `UserPolicyHandler`  in the scaffolding will still check the token to see who you are Authenticated as, but will get the user's roles based on the configuration for that authenticated user within the boundary using the new concepts and logic described below.
+
+  * Your auth server will still store users and their metadata that we want for AuthN and the new `User` entity will capture user metadata to be easily accessed in your app. Say you want to send back a list of recipes and show who created them, this gives you that info without having to reach out to your auth server
+    * Users in your boundary will key to users in your auth server using the `Identifier` property, which should generally be populated with the `NameIdentifier` on your token.
+    * Eventual consistancy TBD
+    * Redis cache TBD?
+
+  * Roles will also not be dictated by your auth server anymore and will be stored in the context of your boundary (not the shared kernel anymore, though you could move them there if it makes sense for your setup). They are still restricted with a smart enum to `Super Admin` and `User`, but feel free to modify or extend these as you wish.
+
+  * When starting your api for the first time, you will not have any `User` or `UserRole` entries. To add an initial root user, you just need to authenticate (e.g. swagger) and hit a protected endpoint. This is because, by default, the `UserPolicyHandler` will now check if you have any users and, if not, add the requesting user as a root user with `Super Admin` access.
+    * You are welcome to change this logic if you wish, it is just an easy default to start with.
+
+  * If you have multiple boundaries, you can make the call on how you manage things. By default each boundary will store its own set of users and roles. This might be useful if say you want to manage users in your billing boundary separate from your inventory boundary, but you may want to combine them too. Feel free to consolidate this as you wish if desired.
+
+  * Users can be managed at the `/users` endpoints. This includes adding and removing their roles as user roles have no standalone meaning without a user.
+
+  * Updated functional tests to properly handle the token setup
+
+* New `RolesController` and `PermissionsController` when using auth
+
+* New `Email` Value Object. Used on `User` if you want to see it in use
+
+* Functional tests use a docker db
+
+* Simple fake `Builder` scaffold for each entity
+
+* Add Date Time Provider
+
+* Fakers for `Address`
+
+* Various new commands for working with the [NextJS Template]((https://github.com/pdevito3/next-template-wrapt)), but it's still in progress so not documenting this much yet.
+
+
+### Updated
+
+* Queries and Commands now just have a request class of `Query` or `Command` respectively
+* Change keycloak image from `jboss` to `sleighzy` for Apple Silicon support
+* Unit of Work return a `Task<int>`
+* Delete and Update commands return response based on UoW response
+* Extra Ef Tools package for SqlServer
+* `Development` Cors has `AllowCredentials`
+* Better DTO indentation
+* Auditable fields are sortable and filterable
+* `GetList` feature defaults to `-CreatedOn` sort order if none is given
+* Better `DateOnly` serialization support
+* `Newtonsoft` -> `System.Text.Json`
+* `Update` feature calls update in repository
+* Added `8632` to `NoWarn` list in API projects -- ` [CS8632] The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.`
+* Better error handling message for incorrect directory with boundary based commands
+* New props on complex example
+* Jaeger will get random free ports exposed for HOST in `docker-compose`
+* More flexible `MonetaryAmount` VO
+* Simplified mapping
+* Default permissions will be the same for both GETS and use the entity plural ((e.g. `CanReadRecipes` ). All permissions will use the entity plural.
+* Integration and unit tests have explicit property assertions
+* Query list uses `AsNoTracking`
+* No more fake read DTO
+* Allow custom schema id's on `AddSwaggerGen`
+* Bump `Respawn` to v6 with simplified `TestFixture` setup
+* Bump all non-breaking packages to latest
+* Include `Moq` package in shared test helper
+* Entity `Update` methods return entity instance
+* Deprecate `add bff` and `add bff entity` commands
+
+### Fixed
+
+* Db configs are added for all entities
+
+### Removed
+
+* Patch endpoint scaffolding
+
+## [0.16.6] - 09/05/2022
+
+### Fixed
+
+* Bad Test Fixture with SqlServer (fixes #95)
+
+## [0.16.5] - 08/18/2022
+
+### Fixed
+
+* Revert parallel functional tests causing unpredictable failures
+
+## [0.16.5] - 08/18/2022
+
+### Fixed
+
+* Revert parallel functional tests causing unpredictable failures
 
 ## [0.16.4] - 08/09/2022
 

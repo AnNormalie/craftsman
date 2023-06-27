@@ -47,10 +47,10 @@ using {contextClassPath.ClassNamespace};
 
 public interface IUnitOfWork : {boundaryServiceName}
 {{
-    Task CommitChanges(CancellationToken cancellationToken = default);
+    Task<int> CommitChanges(CancellationToken cancellationToken = default);
 }}
 
-public class UnitOfWork : IUnitOfWork
+public sealed class UnitOfWork : IUnitOfWork
 {{
     private readonly {dbContextName} _dbContext;
 
@@ -59,9 +59,9 @@ public class UnitOfWork : IUnitOfWork
         _dbContext = dbContext;
     }}
 
-    public async Task CommitChanges(CancellationToken cancellationToken = default)
+    public async Task<int> CommitChanges(CancellationToken cancellationToken = default)
     {{
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        return await _dbContext.SaveChangesAsync(cancellationToken);
     }}
 }}
 ";

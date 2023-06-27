@@ -11,12 +11,11 @@ public class DeleteRecordEndpointBuilder
         var lowercasePrimaryKey = Entity.PrimaryKeyProperty.Name.LowercaseFirstLetter();
         var entityName = entity.Name;
         var primaryKeyProp = Entity.PrimaryKeyProperty;
-        var deleteRecordCommandMethodName = FileNames.CommandDeleteName(entityName);
+        var deleteRecordCommandMethodName = FileNames.CommandDeleteName();
         var pkPropertyType = primaryKeyProp.Type;
         var deleteRecordAuthorizations = feature.IsProtected ? EndpointSwaggerCommentBuilders.BuildAuthorizations() : "";
 
         return @$"{EndpointSwaggerCommentBuilders.GetSwaggerComments_DeleteRecord(entity, addSwaggerComments, deleteRecordAuthorizations.Length > 0)}{deleteRecordAuthorizations}
-    [Produces(""application/json"")]
     [HttpDelete(""{{{lowercasePrimaryKey}:guid}}"", Name = ""Delete{entityName}"")]
     public async Task<ActionResult> Delete{entityName}({pkPropertyType} {lowercasePrimaryKey})
     {{

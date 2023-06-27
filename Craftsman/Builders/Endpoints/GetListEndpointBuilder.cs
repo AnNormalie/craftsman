@@ -14,13 +14,12 @@ public class GetListEndpointBuilder
         var entityNamePlural = entity.Plural;
         var readDto = FileNames.GetDtoName(entityName, Dto.Read);
         var readParamDto = FileNames.GetDtoName(entityName, Dto.ReadParamaters);
-        var queryListMethodName = FileNames.QueryListName(entityName);
+        var queryListMethodName = FileNames.QueryListName();
         var listResponse = $@"IEnumerable<{readDto}>";
         var getListEndpointName = entity.Name == entity.Plural ? $@"Get{entityNamePlural}List" : $@"Get{entityNamePlural}";
         var getListAuthorization = feature.IsProtected ? EndpointSwaggerCommentBuilders.BuildAuthorizations() : "";
 
         return @$"{EndpointSwaggerCommentBuilders.GetSwaggerComments_GetList(entity, addSwaggerComments, listResponse, getListAuthorization.Length > 0)}{getListAuthorization}
-    [Produces(""application/json"")]
     [HttpGet(Name = ""{getListEndpointName}"")]
     public async Task<IActionResult> Get{entityNamePlural}([FromQuery] {readParamDto} {lowercaseEntityVariable}ParametersDto)
     {{

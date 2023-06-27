@@ -14,12 +14,11 @@ public class PutRecordEndpointBuilder
         var entityName = entity.Name;
         var updateDto = FileNames.GetDtoName(entityName, Dto.Update);
         var primaryKeyProp = Entity.PrimaryKeyProperty;
-        var updateRecordCommandMethodName = FileNames.CommandUpdateName(entityName);
+        var updateRecordCommandMethodName = FileNames.CommandUpdateName();
         var pkPropertyType = primaryKeyProp.Type;
         var updateRecordAuthorizations = feature.IsProtected ? EndpointSwaggerCommentBuilders.BuildAuthorizations() : "";
 
         return @$"{EndpointSwaggerCommentBuilders.GetSwaggerComments_PutRecord(entity, addSwaggerComments, updateRecordAuthorizations.Length > 0)}{updateRecordAuthorizations}
-    [Produces(""application/json"")]
     [HttpPut(""{{{lowercasePrimaryKey}:guid}}"", Name = ""Update{entityName}"")]
     public async Task<IActionResult> Update{entityName}({pkPropertyType} {lowercasePrimaryKey}, {updateDto} {lowercaseEntityVariable})
     {{

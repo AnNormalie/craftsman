@@ -1,4 +1,4 @@
-# Craftsman
+# Craftsman Scaffolds Your Boilerplate!
 
 Craftsman is the workhorse behind the [Wrapt](https://wrapt.dev) framework and provides a suite of CLI commands for quickly scaffolding out new files and projects for your .NET Web APIs with simple CLI commands and configuration files.
 
@@ -13,29 +13,72 @@ Craftsman is the workhorse behind the [Wrapt](https://wrapt.dev) framework and p
 
 ------
 
+## Quickstart
+
+- Make sure you have the [.NET 7 SDK](https://dotnet.microsoft.com/download/dotnet-core/7.0) installed, along with [EF Core](https://learn.microsoft.com/en-us/ef/core/cli/dotnet)
+- Install the craftsman tool
+
+```bash
+dotnet tool install -g craftsman
+```
+
+* Spin up an example project
+
+```bash
+craftsman new example MyFirstProject
+```
+
 ## Documentation
 
 For all the documentation on how to use Craftsman, visit [wrapt.dev](https://wrapt.dev).
 
-## Upcoming Features in v0.17
+## Upcoming Features
 
-The last few releases have brought a ton of new features and while the backend is progressing nicely, there are still a few features I want to add before getting to a stable v1. 
-
-I'm planning on doing some more heavy front end work for this upcoming release and then I'll probably do a heavy dog food project to find practical gaps. I have some of the upcoming items below for the next release and this is certainly not an exhaustive list of everything, but I want to be open about what's on the horizon. 🌅
+I'm currently working through a deep example project the really dogfood things and will be making updates around my finding from there. I also want to harden up the frontend work with NextJS soon as well and get that more widely available. If any React devs want to help with this definitely let me know!
 
 Have a request for something you don't see below? Join [our discord](https://discord.gg/TBq2rVkSEj) and let's talk about it!
 
-🚧 React Cleanup
+### Coming in 0.21
 
-🚧 React Controls 
+🚧 No more queryable exposed in repositories
 
-🚧 React Forms
+🚧 Update `GetList` feature to `GetPagedList` and create a distinct `GetList
 
-🚧 React Permissions Integration
+🚧 New error handler middleware
 
-🚧 Json Schema or C# classes for easier file scaffolding
+### Some 0.20 highlights
 
+✅ Intermediate model to not pass DTOs to domain
 
+✅ Specification support
+
+### Some 0.19 highlights
+
+✅ Test projects updated to use XUnit
+
+✅ .NET 7
+
+✅ Integration tests have better service collection scoping and now have a service collection per test. This makes service mocking possible without clashing with other tests
+
+✅ Options Pattern Configuration
+
+### Some 0.18 highlights
+
+✅ Environment Service
+
+✅ Built in Migrations
+
+✅ Various testing and other improvements
+
+### Some 0.17 highlights
+
+✅ Users and Roles managed in each boundary (AuthN still separate)
+
+✅ New `Email` Value Object
+
+✅ Functional Tests use Docker DB and has other cleanup items
+
+✅ NextJS template (still a WIP and not documented, but you can find [the sandbox for things here](https://github.com/pdevito3/next-template-wrapt-sand) and poke through the Craftsman code if you'd like. Can answer questions in out Discord as well.)
 
 ### Some v0.16 highlights
 
