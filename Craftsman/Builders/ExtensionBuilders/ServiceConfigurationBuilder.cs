@@ -12,20 +12,38 @@ public class ServiceConfigurationBuilder
         _utilities = utilities;
     }
 
-    public void CreateWebAppServiceConfiguration(string srcDirectory, string projectBaseName)
+    public void CreateWebAppServiceConfiguration(string srcDirectory, string projectBaseName, bool useCustomErrorHandler)
     {
         var classPath = ClassPathHelper.WebApiServiceExtensionsClassPath(srcDirectory, $"{FileNames.WebAppServiceConfiguration()}.cs", projectBaseName);
-        var fileText = GetWebApiServiceExtensionText(classPath.ClassNamespace, srcDirectory, projectBaseName);
+        var fileText = GetWebApiServiceExtensionText(classPath.ClassNamespace, srcDirectory, projectBaseName, useCustomErrorHandler);
         _utilities.CreateFile(classPath, fileText);
     }
 
-    public static string GetWebApiServiceExtensionText(string classNamespace, string srcDirectory, string projectBaseName)
+    public static string GetWebApiServiceExtensionText(string classNamespace, string srcDirectory, string projectBaseName, bool useCustomErrorHandler)
     {
         var corsName = $"{projectBaseName}CorsPolicy";
         var boundaryServiceName = FileNames.BoundaryServiceInterface(projectBaseName);
         
         var servicesClassPath = ClassPathHelper.WebApiServicesClassPath(srcDirectory, "", projectBaseName);
         var middlewareClassPath = ClassPathHelper.WebApiMiddlewareClassPath(srcDirectory, $"", projectBaseName);
+        
+        var hellangErrorUsings = "";
+        if (!useCustomErrorHandler)
+            hellangErrorUsings = $@"{Environment.NewLine}using Hellang.Middleware.ProblemDetails;
+using Hellang.Middleware.ProblemDetails.Mvc;";
+
+        var hellangRegistration = "";
+        var customErrorHandlerRegistration = "";
+        if(!useCustomErrorHandler)
+        {
+            hellangRegistration =
+                $@"{Environment.NewLine}        builder.Services.AddProblemDetails(ProblemDetailsConfigurationExtension.ConfigureProblemDetails)
+            .AddProblemDetailsConventions();";
+        }
+        else
+        {
+            customErrorHandlerRegistration = "options => options.Filters.Add<ErrorHandlerFilterAttribute>()";
+        }
 
         return @$"namespace {classNamespace};
 
@@ -34,9 +52,7 @@ using {servicesClassPath.ClassNamespace};
 using Configurations;
 using System.Text.Json.Serialization;
 using Serilog;
-using FluentValidation.AspNetCore;
-using Mapster;
-using MapsterMapper;
+using FluentValidation.AspNetCore;{hellangErrorUsings}
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Resources;
@@ -50,7 +66,8 @@ public static class {FileNames.WebAppServiceConfiguration()}
     public static void ConfigureServices(this WebApplicationBuilder builder)
     {{
         builder.Services.AddTransient<IDateTimeProvider, DateTimeProvider>();
-        builder.Services.AddSingleton(Log.Logger);
+        builder.Services.AddSingleton(Log.Logger);{hellangRegistration}
+
         // TODO update CORS for your env
         builder.Services.AddCorsService(""{corsName}"", builder.Environment);
         builder.OpenTelemetryRegistration(builder.Configuration, ""{projectBaseName}"");
@@ -61,22 +78,13 @@ public static class {FileNames.WebAppServiceConfiguration()}
         builder.Services.AddApiVersioningExtension();
 
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
+        builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
         builder.Services.AddScoped<SieveProcessor>();
 
         // registers all services that inherit from your base service interface - {boundaryServiceName}
         builder.Services.AddBoundaryServices(Assembly.GetExecutingAssembly());
 
-        builder.Services
-            .AddMvc(options => options.Filters.Add<ErrorHandlerFilterAttribute>());
-
-        if(builder.Environment.EnvironmentName != Consts.Testing.FunctionalTestingEnvName)
-        {{
-            var typeAdapterConfig = TypeAdapterConfig.GlobalSettings;
-            typeAdapterConfig.Scan(Assembly.GetExecutingAssembly());
-            var mapperConfig = new Mapper(typeAdapterConfig);
-            builder.Services.AddSingleton<IMapper>(mapperConfig);
-        }}
+        builder.Services.AddMvc({customErrorHandlerRegistration});
 
         builder.Services.AddHealthChecks();
         builder.Services.AddSwaggerExtension(builder.Configuration);

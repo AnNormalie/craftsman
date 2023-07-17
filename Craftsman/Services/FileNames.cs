@@ -28,8 +28,15 @@ public static class FileNames
     public static string RabbitMqOptions() => "RabbitMqOptions";
     public static string ConnectionStringOptions() => "ConnectionStringOptions";
     public static string RootConfigurationExtensions() => "RootConfigurationExtensions";
-    public static string FakeBuilderName(string entityName) => $"Fake{entityName}Builder";    
-    public static string MessageInterfaceName(string messageName) => $"I{messageName}";
+    public static string FakeBuilderName(string entityName) => $"Fake{entityName}Builder";
+    public static string MessageInterfaceName(string messageName)
+    {
+        var nameWithI = $"I{messageName}";
+        if (nameWithI.StartsWith("II") && nameWithI.Length > 2 && char.IsUpper(nameWithI[2]))
+            nameWithI = nameWithI.Remove(1, 1);
+        
+        return nameWithI;
+    }
     public static string EntityCreatedDomainMessage(string entityName) => $"{entityName}Created";    
     public static string EntityUpdatedDomainMessage(string entityName) => $"{entityName}Updated";    
     public static string UserRolesUpdateDomainMessage() => "UserRolesUpdated";
@@ -56,7 +63,7 @@ public static class FileNames
     public static string NextJsEntityFeatureFormName(string entityName) => $"{entityName}Form";
     public static string NextJsEntityValidationName(string entityName) => $"{entityName.LowercaseFirstLetter()}ValidationSchema";
     public static string NextJsApiKeysExport(string entityName) => $"{entityName.UppercaseFirstLetter()}Keys";
-    public static string GetMappingName(string entityName) => $"{entityName}Mappings";
+    public static string GetMappingName(string entityName) => $"{entityName}Mapper";
     public static string GetIntegrationTestFixtureName() => $"TestFixture";
 
     public static string CreateEntityUnitTestName(string entityName) => $"Create{entityName}Tests";

@@ -9,6 +9,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Unreleased
 
+### Added
+
+* New `bool` option of `UseCustomErrorHandler` on `ApiTemplate` that defaults to a new error handler using `Hellang.ProblemDetails`. If you don't want a dependency, you can use the existing custom one, but the hellang one is richer and I didn't want to reinvent the wheel
+
+### Updated
+
+* Major MediatR update to 12.x
+* Features returning bool will now have no return value
+* Mapster -> Mapperly
+
+### Fixed
+
+* Can better handle unneccessary `I` on messages 
+* Mapper scaffolding
+
 ## [0.20.0] - 04/08/2023
 
 ### Added

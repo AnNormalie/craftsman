@@ -13,19 +13,24 @@ public class WebApiCsProjBuilder
         _utilities = utilities;
     }
 
-    public void CreateWebApiCsProj(string solutionDirectory, string projectBaseName, DbProvider dbProvider)
+    public void CreateWebApiCsProj(string solutionDirectory, string projectBaseName, DbProvider dbProvider, bool useCustomErrorHandler)
     {
         var classPath = ClassPathHelper.WebApiProjectClassPath(solutionDirectory, projectBaseName);
-        _utilities.CreateFile(classPath, GetWebApiCsProjFileText(dbProvider));
+        _utilities.CreateFile(classPath, GetWebApiCsProjFileText(dbProvider, useCustomErrorHandler));
     }
 
-    public static string GetWebApiCsProjFileText(DbProvider dbProvider)
+    public static string GetWebApiCsProjFileText(DbProvider dbProvider, bool useCustomErrorHandler)
     {
+        var errorPackages = "";
+        if (!useCustomErrorHandler)
+            errorPackages = $@"{Environment.NewLine}    <PackageReference Include=""Hellang.Middleware.ProblemDetails"" Version=""6.5.1"" />";
+        
         return @$"<Project Sdk=""Microsoft.NET.Sdk.Web"">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition=""'$(Configuration)|$(Platform)'=='Debug|AnyCPU'"">
@@ -45,11 +50,8 @@ public class WebApiCsProjBuilder
     <PackageReference Include=""Bogus"" Version=""34.0.2"" />
     <PackageReference Include=""EFCore.NamingConventions"" Version=""7.0.2"" />
     <PackageReference Include=""FluentValidation.AspNetCore"" Version=""11.2.2"" />
-    <PackageReference Include=""HeimGuard"" Version=""0.3.0"" />
-    <PackageReference Include=""Mapster"" Version=""7.3.0"" />
-    <PackageReference Include=""Mapster.DependencyInjection"" Version=""1.0.0"" />
-    <PackageReference Include=""Mapster.EFCore"" Version=""5.1.0"" />
-    <PackageReference Include=""MediatR"" Version=""11.1.0"" />
+    <PackageReference Include=""HeimGuard"" Version=""0.3.0"" />{errorPackages}
+    <PackageReference Include=""MediatR"" Version=""12.0.1"" />
     <PackageReference Include=""MediatR.Extensions.Microsoft.DependencyInjection"" Version=""11.0.0"" />
     <PackageReference Include=""Microsoft.AspNetCore.Authentication.OpenIdConnect"" Version=""7.0.2"" />
     <PackageReference Include=""Microsoft.AspNetCore.Mvc.Versioning"" Version=""5.0.0"" />
@@ -70,6 +72,7 @@ public class WebApiCsProjBuilder
     <PackageReference Include=""OpenTelemetry.Instrumentation.EventCounters"" Version=""1.0.0-alpha.2"" />
     <PackageReference Include=""OpenTelemetry.Instrumentation.Http"" Version=""1.0.0-rc9.9"" />
     <PackageReference Include=""OpenTelemetry.Instrumentation.Runtime"" Version=""1.0.0"" />
+    <PackageReference Include=""Riok.Mapperly"" Version=""2.8.0"" />
     <PackageReference Include=""Swashbuckle.AspNetCore"" Version=""6.5.0"" />
 
     <PackageReference Include=""Sieve"" Version=""2.5.5"" />

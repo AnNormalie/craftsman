@@ -63,12 +63,12 @@ using {entityServicesClassPath.ClassNamespace};
 using {servicesClassPath.ClassNamespace};
 using {modelClassPath.ClassNamespace};
 using {exceptionsClassPath.ClassNamespace};{permissionsUsing}
-using MapsterMapper;
+using Mappings;
 using MediatR;
 
 public static class {className}
 {{
-    public sealed class {updateCommandName} : IRequest<bool>
+    public sealed class {updateCommandName} : IRequest
     {{
         public readonly {primaryKeyPropType} {primaryKeyPropName};
         public readonly {updateDto} {commandProp};
@@ -80,28 +80,25 @@ public static class {className}
         }}
     }}
 
-    public sealed class Handler : IRequestHandler<{updateCommandName}, bool>
+    public sealed class Handler : IRequestHandler<{updateCommandName}>
     {{
         private readonly {repoInterface} _{repoInterfaceProp};
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;{heimGuardField}
+        private readonly IUnitOfWork _unitOfWork;{heimGuardField}
 
-        public Handler({repoInterface} {repoInterfaceProp}, IUnitOfWork unitOfWork, IMapper mapper{heimGuardCtor})
+        public Handler({repoInterface} {repoInterfaceProp}, IUnitOfWork unitOfWork{heimGuardCtor})
         {{
             _{repoInterfaceProp} = {repoInterfaceProp};
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;{heimGuardSetter}
+            _unitOfWork = unitOfWork;{heimGuardSetter}
         }}
 
-        public async Task<bool> Handle({updateCommandName} request, CancellationToken cancellationToken)
+        public async Task Handle({updateCommandName} request, CancellationToken cancellationToken)
         {{{permissionCheck}
             var {updatedEntityProp} = await _{repoInterfaceProp}.GetById(request.Id, cancellationToken: cancellationToken);
-
-            var {modelToUpdateVariableName} = _mapper.Map<{EntityModel.Update.GetClassName(entity.Name)}>(request.{commandProp});
+            var {modelToUpdateVariableName} = request.{commandProp}.To{EntityModel.Update.GetClassName(entity.Name)}();
             {updatedEntityProp}.Update({modelToUpdateVariableName});
 
             _{repoInterfaceProp}.Update({updatedEntityProp});
-            return await _unitOfWork.CommitChanges(cancellationToken) >= 1;
+            await _unitOfWork.CommitChanges(cancellationToken);
         }}
     }}
 }}";
